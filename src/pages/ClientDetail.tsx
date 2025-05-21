@@ -207,9 +207,9 @@ const ClientDetail = () => {
         <ArrowLeft className="h-4 w-4" /> Retour aux clients
       </Button>
 
-      <div className="flex justify-between items-start mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 gap-4 sm:gap-0">
         <div>
-          <h1 className="text-3xl font-bold">{client.full_name}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">{client.full_name}</h1>
           <p className="text-muted-foreground">
             Client depuis{" "}
             {formatDistance(new Date(client.created_at), new Date(), {
@@ -294,9 +294,11 @@ const ClientDetail = () => {
         </Card>
       </div>
 
-      <h2 className="text-xl font-semibold mb-4">Historique des Commandes</h2>
+      <h2 className="text-lg sm:text-xl font-semibold mb-4">
+        Historique des Commandes
+      </h2>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

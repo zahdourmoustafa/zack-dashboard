@@ -5,7 +5,6 @@ import {
   Users,
   Package2,
   FileText,
-  Menu,
   ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,7 +13,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 
 const AppSidebar = () => {
@@ -26,11 +24,8 @@ const AppSidebar = () => {
 
   return (
     <Sidebar>
-      <SidebarHeader className="flex items-center justify-between p-4">
-        <div className="font-semibold text-lg">Design Dashboard</div>
-        <SidebarTrigger>
-          <Menu className="h-5 w-5" />
-        </SidebarTrigger>
+      <SidebarHeader className="flex items-center justify-center p-4">
+        <img src="/logo.jpg" alt="Logo" className="h-10" />
       </SidebarHeader>
       <SidebarContent>
         <div className="space-y-1 px-2 py-3">
@@ -96,11 +91,7 @@ const AppSidebar = () => {
           </Link>
         </div>
       </SidebarContent>
-      <SidebarFooter>
-        <div className="px-4 py-3 text-xs text-muted-foreground">
-          Design Dashboard v1.0.0
-        </div>
-      </SidebarFooter>
+      <SidebarFooter></SidebarFooter>
     </Sidebar>
   );
 };

@@ -79,7 +79,7 @@ const ClientsPage = () => {
 
   useEffect(() => {
     fetchClientsAndOrders();
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     const filtered = clients.filter(
@@ -163,25 +163,27 @@ const ClientsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-[60vh]">
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-[60vh] bg-slate-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4">Chargement des données...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brandSecondary mx-auto"></div>
+          <p className="mt-4 text-brandPrimary">Chargement des données...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Clients</h1>
+    <div className="container mx-auto px-4 py-8 bg-white min-h-screen">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4 sm:gap-0">
+        <h1 className="text-2xl sm:text-3xl font-bold text-brandPrimary">
+          Clients
+        </h1>
         <Dialog
           open={isAddClientDialogOpen}
           onOpenChange={setIsAddClientDialogOpen}
         >
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
+            <Button className="flex items-center gap-2 bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold">
               <Plus className="h-4 w-4" /> Nouveau Client
             </Button>
           </DialogTrigger>
@@ -211,29 +213,34 @@ const ClientsPage = () => {
         </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-slate-100">
             <TableRow>
-              <TableHead>Nom Complet</TableHead>
-              <TableHead>Téléphone</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Commandes</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-brandPrimary">Nom Complet</TableHead>
+              <TableHead className="text-brandPrimary">Téléphone</TableHead>
+              <TableHead className="text-brandPrimary">Email</TableHead>
+              <TableHead className="text-brandPrimary">Commandes</TableHead>
+              <TableHead className="text-right text-brandPrimary">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredClients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10">
+                <TableCell
+                  colSpan={5}
+                  className="text-center py-10 text-slate-500"
+                >
                   Aucun client trouvé
                 </TableCell>
               </TableRow>
             ) : (
               filteredClients.map((client) => (
-                <TableRow key={client.id}>
+                <TableRow key={client.id} className="hover:bg-slate-50">
                   <TableCell
-                    className="font-medium cursor-pointer hover:underline"
+                    className="font-medium cursor-pointer hover:text-brandSecondary hover:underline"
                     onClick={() => viewClientDetail(client.id)}
                   >
                     {client.full_name}

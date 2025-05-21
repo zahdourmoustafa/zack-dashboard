@@ -66,7 +66,7 @@ const ClientForm = ({ client, onSuccess }: ClientFormProps) => {
     const baseSubmissionData: {
       full_name: string;
       phone: string;
-      email: string; // email is now explicitly typed as string
+      email: string;
     } = {
       full_name: data.full_name,
       phone: data.phone,
@@ -88,10 +88,12 @@ const ClientForm = ({ client, onSuccess }: ClientFormProps) => {
         if (error) throw error;
       } else {
         // Add new client
-        // baseSubmissionData has the correct type { email: string, ... } for insert
+        const insertPayload = {
+            ...baseSubmissionData,
+        };
         const { error } = await supabase
           .from("clients")
-          .insert(baseSubmissionData);
+          .insert(insertPayload);
 
         if (error) throw error;
       }
@@ -169,11 +171,12 @@ const ClientForm = ({ client, onSuccess }: ClientFormProps) => {
           )}
         />
 
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-4">
           <Button
             type="button"
             onClick={() => form.handleSubmit(onFormSubmit)()}
             disabled={isSubmitting || form.formState.isSubmitting}
+            className="bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold"
           >
             {isSubmitting
               ? "Enregistrement..."

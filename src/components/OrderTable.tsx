@@ -16,76 +16,76 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
-import { format } from "date-fns";
+import { ChevronDown, CopyIcon, StarIcon } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   Order,
   Client,
-  Product,
   getStatusColor,
   getStatusText,
+  OrderHistoryEntry,
 } from "@/lib/mock-data";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+// Predefined palette of Tailwind classes for step badges
+const stepColorPalette = [
+  { bg: "bg-sky-100", text: "text-sky-700", border: "border-sky-300" },
+  { bg: "bg-amber-100", text: "text-amber-700", border: "border-amber-300" },
+  {
+    bg: "bg-emerald-100",
+    text: "text-emerald-700",
+    border: "border-emerald-300",
+  },
+  { bg: "bg-rose-100", text: "text-rose-700", border: "border-rose-300" },
+  { bg: "bg-indigo-100", text: "text-indigo-700", border: "border-indigo-300" },
+  { bg: "bg-pink-100", text: "text-pink-700", border: "border-pink-300" },
+  { bg: "bg-lime-100", text: "text-lime-700", border: "border-lime-300" },
+  { bg: "bg-cyan-100", text: "text-cyan-700", border: "border-cyan-300" },
+];
+
+// Map to store assigned colors for step names
+const stepColorMap = new Map<
+  string,
+  { bg: string; text: string; border: string }
+>();
+let nextColorIndex = 0;
+
+const getStepColorClass = (stepName: string): string => {
+  if (!stepColorMap.has(stepName)) {
+    const color = stepColorPalette[nextColorIndex % stepColorPalette.length];
+    stepColorMap.set(stepName, color);
+    nextColorIndex++;
+  }
+  const assignedColor = stepColorMap.get(stepName)!;
+  return `${assignedColor.bg} ${assignedColor.text} ${assignedColor.border}`;
+};
+
 interface OrderTableProps {
   orders: Order[];
   clients: Client[];
-  products: Product[];
+  isLoading?: boolean;
+  onCloneOrder: (orderId: string) => void;
+  onTogglePriority: (orderId: string, currentPriority: boolean) => void;
 }
 
-const OrderTable = ({ orders, clients, products }: OrderTableProps) => {
+const OrderTable = ({
+  orders,
+  clients,
+  isLoading,
+  onCloneOrder,
+  onTogglePriority,
+}: OrderTableProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
-  const sortedOrders = [...orders].sort((a, b) => {
-    const statusPriority = {
-      en_cours: 0,
-      en_attente: 1,
-      reporte: 2,
-      annule: 3,
-      termine: 4,
-    };
-    return (
-      statusPriority[a.status as keyof typeof statusPriority] -
-      statusPriority[b.status as keyof typeof statusPriority]
-    );
-  });
-
-  const getCurrentStepDisplay = (order: Order) => {
-    const productDetails =
-      order.products || products.find((p) => p.id === order.product_id);
-
-    if (!productDetails) {
-      return order.status === "termine"
-        ? "Terminé"
-        : "Détails produit manquants";
-    }
-
-    if (
-      !productDetails.process_steps ||
-      productDetails.process_steps.length === 0
-    ) {
-      return order.status === "termine" ? "Terminé" : "Étapes non définies";
-    }
-
-    const currentStepIndex =
-      typeof order.current_step_index === "number"
-        ? order.current_step_index
-        : -1;
-
-    if (currentStepIndex >= productDetails.process_steps.length) {
-      return "Terminé";
-    }
-    if (currentStepIndex < 0 && order.status === "en_attente") {
+  const getCurrentStepNameForHistory = (order: Order): string => {
+    if (order.status === "termine") return "Finalisé";
+    if (order.status === "en_attente" && order.current_step_index === 0)
       return "Prêt à commencer";
-    }
-    if (currentStepIndex < 0) {
-      return "Indéfini";
-    }
-    return productDetails.process_steps[currentStepIndex];
+    return `Étape ${order.current_step_index || 0}`;
   };
 
   const viewOrderDetail = (orderId: string) => {
@@ -99,47 +99,29 @@ const OrderTable = ({ orders, clients, products }: OrderTableProps) => {
     try {
       setUpdatingOrderId(order.id);
       const oldStatus = order.status;
-      const productForOrder =
-        order.products || products.find((p) => p.id === order.product_id);
 
-      let stepNameForHistory = "Action sur la commande";
-      if (productForOrder) {
-        const stepIndex =
-          typeof order.current_step_index === "number"
-            ? order.current_step_index
-            : -1;
+      let stepNameForHistory = `Changement vers ${getStatusText(newStatus)}`;
+      if (newStatus === "termine") {
+        stepNameForHistory = "Finalisation de la commande";
+      } else if (oldStatus === "en_attente" && newStatus === "en_cours") {
+        stepNameForHistory = "Démarrage du traitement de la commande";
+      } else if (
+        order.current_step_index !== null &&
+        order.order_items &&
+        order.order_items.length > 0
+      ) {
+        const firstItem = order.order_items[0];
         if (
-          newStatus === "termine" &&
-          (!productForOrder.process_steps ||
-            productForOrder.process_steps.length === 0)
+          firstItem &&
+          firstItem.product &&
+          firstItem.product.process_steps &&
+          order.current_step_index < firstItem.product.process_steps.length
         ) {
-          stepNameForHistory = "Finalisé (sans étapes définies)";
-        } else if (
-          oldStatus === "en_attente" &&
-          newStatus === "en_cours" &&
-          (!productForOrder.process_steps ||
-            productForOrder.process_steps.length === 0)
-        ) {
-          stepNameForHistory = "Traitement initié";
-        } else if (
-          productForOrder.process_steps &&
-          productForOrder.process_steps.length > 0 &&
-          stepIndex >= 0 &&
-          stepIndex < productForOrder.process_steps.length
-        ) {
-          stepNameForHistory = productForOrder.process_steps[stepIndex];
-        } else if (newStatus === "termine") {
-          stepNameForHistory = "Finalisation";
-        } else {
-          stepNameForHistory = `Changement vers ${getStatusText(newStatus)}`;
+          // stepNameForHistory = firstItem.product.process_steps[order.current_step_index];
         }
-      } else {
-        stepNameForHistory = `Changement vers ${getStatusText(
-          newStatus
-        )} (produit non spécifié)`;
       }
 
-      const newHistoryEntry = {
+      const newHistoryEntry: OrderHistoryEntry = {
         step: stepNameForHistory,
         status: newStatus,
         timestamp: new Date().toISOString(),
@@ -147,24 +129,22 @@ const OrderTable = ({ orders, clients, products }: OrderTableProps) => {
       const orderHistory = Array.isArray(order.history) ? order.history : [];
       const updatedHistory = [...orderHistory, newHistoryEntry];
 
-      const { data: updatedOrder, error } = await supabase
+      const { error } = await supabase
         .from("orders")
         .update({
           status: newStatus,
-          history: updatedHistory,
+          history: updatedHistory as any,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", order.id)
-        .select()
-        .single();
+        .eq("id", order.id);
 
       if (error) throw error;
 
       toast({
         title: "Statut de la commande mis à jour",
-        description: `La commande pour ${
-          productForOrder?.name || order.product_id
-        } est maintenant "${getStatusText(newStatus)}"`,
+        description: `La commande #${order.id} est maintenant "${getStatusText(
+          newStatus
+        )}"`,
       });
       window.location.reload();
     } catch (error) {
@@ -180,50 +160,58 @@ const OrderTable = ({ orders, clients, products }: OrderTableProps) => {
   };
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto">
       <Table>
-        <TableHeader>
+        <TableHeader className="bg-slate-100">
           <TableRow>
-            <TableHead>Client</TableHead>
-            <TableHead>Produit</TableHead>
-            <TableHead>Qté</TableHead>
-            <TableHead>Date Commande</TableHead>
-            <TableHead>Statut Commande</TableHead>
-            <TableHead>Étape Commande</TableHead>
-            <TableHead></TableHead>
+            <TableHead className="text-brandPrimary">Client</TableHead>
+            <TableHead className="text-brandPrimary">Date Commande</TableHead>
+            <TableHead className="text-brandPrimary">Âge Commande</TableHead>
+            <TableHead className="text-brandPrimary">Statut Commande</TableHead>
+            <TableHead className="text-brandPrimary text-center">
+              Action
+            </TableHead>
+            <TableHead className="text-brandPrimary"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedOrders.length === 0 ? (
+          {isLoading ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-10">
+              <TableCell
+                colSpan={6}
+                className="text-center py-10 text-slate-500"
+              >
+                Chargement des commandes...
+              </TableCell>
+            </TableRow>
+          ) : orders.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={6}
+                className="text-center py-10 text-slate-500"
+              >
                 Aucune commande trouvée
               </TableCell>
             </TableRow>
           ) : (
-            sortedOrders.map((order) => {
+            orders.map((order) => {
               const orderStatus = order.status || "en_attente";
-              const orderProduct =
-                order.products ||
-                products.find((p) => p.id === order.product_id);
+              const client = clients.find((c) => c.id === order.client_id);
+              let clientName =
+                client?.full_name || order.client_id || "Client inconnu";
 
               return (
                 <TableRow
                   key={order.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className="cursor-pointer hover:bg-slate-50"
                   onClick={() => viewOrderDetail(order.id)}
                 >
-                  <TableCell>
-                    {order.clients?.full_name ||
-                      order.client_id ||
-                      "Client inconnu"}
+                  <TableCell className="font-medium hover:text-brandSecondary">
+                    {order.is_priority && (
+                      <StarIcon className="h-4 w-4 text-yellow-400 inline-block mr-1 mb-0.5" fill="yellow" />
+                    )}
+                    {clientName}
                   </TableCell>
-                  <TableCell>
-                    {orderProduct?.name ||
-                      order.product_id ||
-                      "Produit inconnu"}
-                  </TableCell>
-                  <TableCell>{order.quantity}</TableCell>
                   <TableCell className="whitespace-nowrap">
                     <span className="text-sm">
                       {order.order_date || order.created_at
@@ -235,6 +223,16 @@ const OrderTable = ({ orders, clients, products }: OrderTableProps) => {
                         : "Date N/A"}
                     </span>
                   </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <span className="text-sm">
+                      {order.created_at
+                        ? formatDistanceToNow(new Date(order.created_at), {
+                            addSuffix: true,
+                            locale: fr,
+                          })
+                        : "N/A"}
+                    </span>
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"
@@ -243,14 +241,34 @@ const OrderTable = ({ orders, clients, products }: OrderTableProps) => {
                       {getStatusText(orderStatus)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{getCurrentStepDisplay(order)}</TableCell>
+                  <TableCell className="text-center">
+                    {orderStatus === "en_attente" && (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          changeOrderStatus(order, "en_cours");
+                        }}
+                        size="sm"
+                        className="bg-green-500 hover:bg-green-600 text-white font-semibold px-3 py-1 text-xs"
+                        disabled={updatingOrderId === order.id}
+                      >
+                        {updatingOrderId === order.id ? (
+                          <div className="h-3 w-3 animate-spin rounded-full border-b-2 border-white mx-auto"></div>
+                        ) : (
+                          "Démarrer"
+                        )}
+                      </Button>
+                    )}
+                  </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="sm"
-                          disabled={updatingOrderId === order.id}
+                          disabled={
+                            updatingOrderId === order.id
+                          }
                         >
                           {updatingOrderId === order.id ? (
                             <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-primary"></div>
@@ -260,50 +278,18 @@ const OrderTable = ({ orders, clients, products }: OrderTableProps) => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => viewOrderDetail(order.id)}
-                        >
-                          Voir Détails Commande
-                        </DropdownMenuItem>
                         {orderStatus !== "termine" &&
-                          orderStatus !== "annule" && (
-                            <>
-                              {orderStatus !== "en_attente" && (
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    changeOrderStatus(order, "en_attente")
-                                  }
-                                >
-                                  Marquer En attente
-                                </DropdownMenuItem>
-                              )}
-                              {orderStatus !== "en_cours" && (
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    changeOrderStatus(order, "en_cours")
-                                  }
-                                >
-                                  Marquer En cours
-                                </DropdownMenuItem>
-                              )}
-                              {orderStatus !== "reporte" && (
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    changeOrderStatus(order, "reporte")
-                                  }
-                                >
-                                  Marquer Reporté
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  changeOrderStatus(order, "termine")
-                                }
-                              >
-                                Marquer Terminé
-                              </DropdownMenuItem>
-                            </>
+                          orderStatus !== "annule" &&
+                          orderStatus !== "reporte" && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                changeOrderStatus(order, "reporte")
+                              }
+                            >
+                              Marquer Reporté
+                            </DropdownMenuItem>
                           )}
+
                         {orderStatus !== "annule" &&
                           orderStatus !== "termine" && (
                             <DropdownMenuItem
@@ -312,6 +298,14 @@ const OrderTable = ({ orders, clients, products }: OrderTableProps) => {
                               Marquer Annulé
                             </DropdownMenuItem>
                           )}
+                        <DropdownMenuItem onClick={() => onCloneOrder(order.id)}>
+                          <CopyIcon className="mr-2 h-4 w-4" />
+                          Cloner Commande
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onTogglePriority(order.id, order.is_priority || false)}>
+                          <StarIcon className="mr-2 h-4 w-4" />
+                          {order.is_priority ? "Retirer Priorité" : "Marquer Prioritaire"}
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

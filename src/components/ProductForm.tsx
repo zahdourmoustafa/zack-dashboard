@@ -20,7 +20,7 @@ interface ProductFormProps {
   onSuccess: () => void;
 }
 
-const AVAILABLE_PROCESS_STEPS = [
+const AVAILABLE_PROCESS_STEPS_DEFAULT = [
   "Conception",
   "Impression",
   "Plastification",
@@ -32,26 +32,39 @@ const FINAL_STEP = "Emballage";
 const ProductForm = ({ product, onSuccess }: ProductFormProps) => {
   const { toast } = useToast();
 
-  const initialProcessSteps = product?.process_steps
+  const initialSelectedSteps = product?.process_steps
     ? product.process_steps.filter((step) => step !== FINAL_STEP)
     : [];
 
   const [formData, setFormData] = useState({
     name: product?.name || "",
     description: product?.description || "",
-    process_steps: initialProcessSteps,
+    process_steps: initialSelectedSteps,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newCustomStep, setNewCustomStep] = useState("");
+  const [availableProcessSteps, setAvailableProcessSteps] = useState(() => {
+    const customStepsFromProduct = product?.process_steps
+        ? product.process_steps.filter(step => step !== FINAL_STEP && !AVAILABLE_PROCESS_STEPS_DEFAULT.includes(step))
+        : [];
+    return [...AVAILABLE_PROCESS_STEPS_DEFAULT, ...new Set(customStepsFromProduct)];
+  });
 
   useEffect(() => {
-    const currentInitialSteps = product?.process_steps
+    const currentInitialSelectedSteps = product?.process_steps
       ? product.process_steps.filter((step) => step !== FINAL_STEP)
       : [];
-    setFormData((prev) => ({
+    
+    const customStepsFromProduct = product?.process_steps
+        ? product.process_steps.filter(step => step !== FINAL_STEP && !AVAILABLE_PROCESS_STEPS_DEFAULT.includes(step))
+        : [];
+    setAvailableProcessSteps([...AVAILABLE_PROCESS_STEPS_DEFAULT, ...new Set(customStepsFromProduct)]);
+
+    setFormData({
       name: product?.name || "",
       description: product?.description || "",
-      process_steps: currentInitialSteps,
-    }));
+      process_steps: currentInitialSelectedSteps,
+    });
   }, [product]);
 
   const handleChange = (
@@ -69,7 +82,60 @@ const ProductForm = ({ product, onSuccess }: ProductFormProps) => {
       const newSteps = prev.process_steps.includes(step)
         ? prev.process_steps.filter((s) => s !== step)
         : [...prev.process_steps, step];
+      if (newSteps.includes(step) && !availableProcessSteps.includes(step) && step !== FINAL_STEP) {
+        setAvailableProcessSteps(prevAvailable => {
+          if (!prevAvailable.includes(step)) {
+            return [...prevAvailable, step];
+          }
+          return prevAvailable;
+        });
+      }
       return { ...prev, process_steps: newSteps };
+    });
+  };
+
+  const handleAddCustomStep = () => {
+    const trimmedStep = newCustomStep.trim();
+    if (trimmedStep && !availableProcessSteps.includes(trimmedStep) && trimmedStep !== FINAL_STEP) {
+      setAvailableProcessSteps(prev => [...prev, trimmedStep]);
+      setFormData(prevData => ({
+        ...prevData,
+        process_steps: [...prevData.process_steps, trimmedStep]
+      }));
+      setNewCustomStep("");
+    } else if (availableProcessSteps.includes(trimmedStep) || trimmedStep === FINAL_STEP) {
+      toast({
+        title: "Étape Existante",
+        description: `L'étape "${trimmedStep}" existe déjà ou est réservée.`,
+        variant: "default",
+      });
+    } else if (!trimmedStep) {
+        toast({
+            title: "Entrée Invalide",
+            description: "Le nom de l'étape ne peut pas être vide.",
+            variant: "destructive",
+        });
+    }
+  };
+
+  const handleDeleteAvailableStep = (stepToDelete: string) => {
+    if (AVAILABLE_PROCESS_STEPS_DEFAULT.includes(stepToDelete)) {
+      toast({
+        title: "Suppression Impossible",
+        description: `L'étape par défaut "${stepToDelete}" ne peut pas être supprimée.`,
+        variant: "default",
+      });
+      return;
+    }
+
+    setAvailableProcessSteps(prev => prev.filter(step => step !== stepToDelete));
+    setFormData(prevData => ({
+      ...prevData,
+      process_steps: prevData.process_steps.filter(step => step !== stepToDelete),
+    }));
+    toast({
+        title: "Étape Supprimée",
+        description: `L'étape "${stepToDelete}" a été retirée de la liste des étapes disponibles.`,
     });
   };
 
@@ -190,7 +256,7 @@ const ProductForm = ({ product, onSuccess }: ProductFormProps) => {
         <textarea
           id="description"
           name="description"
-          value={formData.description}
+          value={formData.description || ''}
           onChange={handleChange}
           placeholder="Description détaillée du produit"
           className="w-full p-2 border rounded-md min-h-[80px]"
@@ -200,18 +266,56 @@ const ProductForm = ({ product, onSuccess }: ProductFormProps) => {
       <div className="space-y-2">
         <Label>Étapes du Processus (sélectionnez parmi la liste)</Label>
         <div className="space-y-2 rounded-md border p-4">
-          {AVAILABLE_PROCESS_STEPS.map((step) => (
-            <div key={step} className="flex items-center space-x-2">
-              <Checkbox
-                id={`step-${step}`}
-                checked={formData.process_steps.includes(step)}
-                onCheckedChange={() => handleStepToggle(step)}
-              />
-              <Label htmlFor={`step-${step}`} className="font-normal">
-                {step}
-              </Label>
+          {availableProcessSteps.map((step) => (
+            <div key={step} className="flex items-center justify-between space-x-2">
+              <div className="flex items-center space-x-2">
+                 <Checkbox
+                  id={`step-${step}`}
+                  checked={formData.process_steps.includes(step)}
+                  onCheckedChange={() => handleStepToggle(step)}
+                />
+                <Label htmlFor={`step-${step}`} className="font-normal">
+                  {step}
+                </Label>
+              </div>
+              {!AVAILABLE_PROCESS_STEPS_DEFAULT.includes(step) && step !== FINAL_STEP && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDeleteAvailableStep(step)}
+                  title={`Supprimer l'étape personnalisée "${step}"`}
+                  className="h-6 w-6 text-red-500 hover:text-red-700"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           ))}
+        </div>
+
+        <div className="mt-4 space-y-1">
+          <Label htmlFor="customStep">Ajouter une nouvelle étape</Label>
+          <div className="flex items-center space-x-2">
+            <Input
+              id="customStep"
+              name="customStep"
+              value={newCustomStep}
+              onChange={(e) => setNewCustomStep(e.target.value)}
+              placeholder="ex: Vernissage Sélectif"
+              className="flex-grow"
+            />
+            <Button
+              type="button"
+              onClick={handleAddCustomStep}
+              variant="outline"
+              size="icon"
+              title="Ajouter l'étape"
+              className="shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="mt-4 space-y-2">
