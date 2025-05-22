@@ -103,7 +103,7 @@ const OrderDetail = () => {
               status,
               current_step_index,
               product_id,
-              products:product_id (
+              product:product_id (
                 id, 
                 name, 
                 description, 
@@ -665,7 +665,9 @@ const OrderDetail = () => {
                   </h4>
                   <Badge
                     variant="outline"
-                    className={`${getStatusColor(item.status || "en_attente")}`}
+                    className={`self-start ${getStatusColor(
+                      item.status || "en_attente"
+                    )}`}
                   >
                     {getStatusText(item.status || "en_attente")}
                   </Badge>
@@ -694,7 +696,7 @@ const OrderDetail = () => {
                   item.product.process_steps.length > 0 && (
                     <div className="mt-3 mb-3">
                       <h5 className="text-sm font-medium mb-2">Progression:</h5>
-                      <div className="flex items-center space-x-2 overflow-x-auto pb-2">
+                      <div className="flex flex-wrap items-center gap-2 pb-2">
                         {item.product.process_steps.map((step, stepIndex) => {
                           let stepState: "completed" | "active" | "pending" =
                             "pending";
@@ -734,7 +736,7 @@ const OrderDetail = () => {
                           return (
                             <div
                               key={`${item.id}-${step}-${stepIndex}`}
-                              className={`flex flex-col items-center min-w-[80px] ${
+                              className={`flex flex-col items-center min-w-[70px] p-1 ${
                                 canGoToThisStep
                                   ? "cursor-pointer hover:opacity-75 transition-opacity"
                                   : "cursor-default"
