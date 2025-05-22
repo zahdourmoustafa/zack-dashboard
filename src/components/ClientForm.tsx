@@ -39,10 +39,11 @@ interface ClientFormProps {
     phone: string;
     email: string;
   };
-  onSuccess: () => void;
+  onSuccess: (newClientId?: string) => void;
+  onCancel?: () => void;
 }
 
-const ClientForm = ({ client, onSuccess }: ClientFormProps) => {
+const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -89,13 +90,16 @@ const ClientForm = ({ client, onSuccess }: ClientFormProps) => {
       } else {
         // Add new client
         const insertPayload = {
-            ...baseSubmissionData,
+          ...baseSubmissionData,
         };
-        const { error } = await supabase
+        const { data: newClient, error } = await supabase
           .from("clients")
-          .insert(insertPayload);
+          .insert(insertPayload)
+          .select("id")
+          .single();
 
         if (error) throw error;
+        const createdClientId = newClient?.id;
       }
 
       // Show success toast only after successful database operation
@@ -108,7 +112,7 @@ const ClientForm = ({ client, onSuccess }: ClientFormProps) => {
 
       // Clear form and call onSuccess only after successful operation
       form.reset();
-      onSuccess();
+      onSuccess(client ? undefined : createdClientId);
     } catch (error) {
       console.error("Error saving client:", error);
       toast({
@@ -124,7 +128,10 @@ const ClientForm = ({ client, onSuccess }: ClientFormProps) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-4 overflow-y-auto max-h-[70vh] ">
+      <form
+        onSubmit={form.handleSubmit(onFormSubmit)}
+        className="space-y-4 overflow-y-auto max-h-[70vh] "
+      >
         <FormField
           control={form.control}
           name="full_name"
@@ -171,10 +178,19 @@ const ClientForm = ({ client, onSuccess }: ClientFormProps) => {
           )}
         />
 
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end pt-4 gap-2">
+          {onCancel && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
+              Annuler
+            </Button>
+          )}
           <Button
-            type="button"
-            onClick={() => form.handleSubmit(onFormSubmit)()}
+            type="submit"
             disabled={isSubmitting || form.formState.isSubmitting}
             className="bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold"
           >
