@@ -321,6 +321,9 @@ const OrdersPage = () => {
         <Table>
           <TableHeader className="bg-slate-100">
             <TableRow>
+              <TableHead className="text-brandPrimary font-bold">
+                Client
+              </TableHead>
               <TableHead className="text-brandPrimary">Produit</TableHead>
               <TableHead
                 className="text-right text-brandPrimary cursor-pointer hover:text-brandSecondary transition-colors"
@@ -337,7 +340,6 @@ const OrdersPage = () => {
                   </span>
                 )}
               </TableHead>
-              <TableHead className="text-brandPrimary">Client</TableHead>
               <TableHead className="text-brandPrimary">Statut</TableHead>
             </TableRow>
           </TableHeader>
@@ -373,9 +375,9 @@ const OrdersPage = () => {
                   className="hover:bg-slate-50 cursor-pointer"
                   onClick={() => navigate(`/orders/${item.order_id}`)}
                 >
+                  <TableCell>{item.clientName}</TableCell>
                   <TableCell className="font-medium">{item.title}</TableCell>
                   <TableCell className="text-right">{item.quantity}</TableCell>
-                  <TableCell>{item.clientName}</TableCell>
                   <TableCell>
                     <Badge
                       variant={badgeProps.variant}

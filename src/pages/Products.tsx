@@ -21,7 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import ProductForm from "@/components/ProductForm";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useSupabase } from "@/context/SupabaseContext";
 import { useNavigate } from "react-router-dom";
 // import { PostgrestError } from "@supabase/supabase-js"; // Commenting out as we'll try a generic Error
 
@@ -37,12 +37,13 @@ interface Product {
 
 const ProductsPage = () => {
   const { toast } = useToast();
+  const { supabase } = useSupabase();
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingPage, setIsLoadingPage] = useState(true);
   const navigate = useNavigate();
 
   // Helper function to check for orders associated with a product
@@ -55,24 +56,25 @@ const ProductsPage = () => {
   //     .eq("product_id", productId)
   //     .limit(1);
   //   const { data, error }: { data: { id: string }[] | null; error: Error | null } = await query;
-  //   
+  //
   //   return { data, error };
   // };
 
   // Fetch products from Supabase
   const fetchProducts = async () => {
-    setIsLoading(true);
+    if (!supabase) return;
+    setIsLoadingPage(true);
     try {
+      // RLS ensures only user's products are fetched.
+      // user_id is automatically handled by Supabase based on the JWT.
       const { data, error } = await supabase.from("products").select("*");
 
       if (error) throw error;
 
-      // Data directly from Supabase should now have process_steps as an array
-      // Ensure products have process_steps, default to empty array if null/undefined from DB
-      const productsWithEnsuredSteps = data.map((product) => ({
+      const productsWithEnsuredSteps = (data || []).map((product) => ({
         ...product,
         process_steps: product.process_steps || [],
-        description: product.description || null, // Ensure description is null if not present
+        description: product.description || null,
       })) as Product[];
 
       setProducts(productsWithEnsuredSteps);
@@ -85,14 +87,17 @@ const ProductsPage = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsLoadingPage(false);
     }
   };
 
   // Initial load
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    // Supabase client should be available, fetch products
+    if (supabase) {
+      fetchProducts();
+    }
+  }, [supabase]);
 
   // Filter products based on search query
   useEffect(() => {
@@ -111,31 +116,11 @@ const ProductsPage = () => {
     productId: string,
     productName: string
   ) => {
+    if (!supabase) return;
     try {
-      // Use the helper function to check for associated orders
-      // const { data: orders, error: ordersError } = await checkProductInOrders(productId);
-
-      // if (ordersError) {
-      //   console.error("Error checking for associated orders:", ordersError);
-      //   toast({
-      //     title: "Erreur lors de la vérification",
-      //     description:
-      //       "Impossible de vérifier les commandes associées. Suppression annulée par précaution.",
-      //     variant: "destructive",
-      //   });
-      //   return;
-      // }
-
-      // if (orders && orders.length > 0) {
-      //   toast({
-      //     title: "Suppression impossible",
-      //     description: `Le produit \"${productName}\" ne peut pas être supprimé car il est utilisé dans des commandes existantes.`,
-      //     variant: "destructive",
-      //   });
-      //   return;
-      // }
-
-      // If no orders are associated, proceed with deletion - This condition is now effectively always true
+      // No need to check for associated orders here, RLS handles user scope.
+      // If referential integrity is set up in DB (e.g. product_id in order_items cannot be null),
+      // Supabase will prevent deletion if product is in use.
       const { error: deleteError } = await supabase
         .from("products")
         .delete()
@@ -148,16 +133,17 @@ const ProductsPage = () => {
         description: `Le produit "${productName}" a été supprimé avec succès.`,
       });
 
-      fetchProducts(); // Refresh products list
-    } catch (error) {
-      // This catch block will now primarily handle unexpected errors or the re-thrown deleteError
+      fetchProducts();
+    } catch (error: any) {
       console.error(
         `Error deleting product "${productName}" (ID: ${productId}):`,
         error
       );
       toast({
         title: "Erreur de suppression",
-        description: `Impossible de supprimer le produit "${productName}". Vérifiez la console pour plus de détails.`,
+        description:
+          error.message ||
+          `Impossible de supprimer le produit "${productName}".`,
         variant: "destructive",
       });
     }
@@ -170,8 +156,17 @@ const ProductsPage = () => {
 
   const handleProductSuccess = () => {
     setIsDialogOpen(false);
-    fetchProducts(); // Refresh products after add/edit
+    fetchProducts();
   };
+
+  // Display loading indicator if Clerk/Supabase is initializing or products are fetching
+  if (isLoadingPage) {
+    return (
+      <div className="container mx-auto px-4 py-8 bg-white min-h-screen flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brandSecondary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 bg-white min-h-screen">
@@ -200,85 +195,81 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brandSecondary"></div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.length === 0 ? (
-            <div className="col-span-full text-center py-10 text-slate-500">
-              Aucun produit trouvé
-            </div>
-          ) : (
-            filteredProducts.map((product) => (
-              <Card key={product.id} className="flex flex-col shadow-lg">
-                <CardHeader>
-                  <CardTitle className="truncate text-brandPrimary">
-                    {product.name}
-                  </CardTitle>
-                  <CardDescription className="text-sm text-slate-600 h-10 truncate">
-                    {product.process_steps.length} étapes
-                    {product.description && ` • ${product.description}`}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <div className="flex flex-wrap gap-2">
-                    {product.process_steps.map((step, index) => (
-                      <Badge
-                        key={index}
-                        variant="outline"
-                        className="bg-yellow-100 text-yellow-800 border-yellow-300"
-                      >
-                        {index + 1}. {step}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-                <CardFooter className="flex justify-between mt-auto pt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditProduct(product)}
-                    className="border-brandPrimary text-brandPrimary hover:bg-brandPrimary hover:text-slate-50"
-                  >
-                    <Edit className="h-4 w-4 mr-1" /> Modifier
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() =>
-                      handleDeleteProduct(product.id, product.name)
-                    }
-                    className="bg-red-600 text-white hover:bg-red-700"
-                  >
-                    <Trash className="h-4 w-4 mr-1" /> Supprimer
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))
-          )}
-        </div>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {filteredProducts.length === 0 ? (
+          <div className="col-span-full text-center py-10 text-slate-500">
+            Aucun produit trouvé. Créez votre premier produit !
+          </div>
+        ) : (
+          filteredProducts.map((product) => (
+            <Card key={product.id} className="flex flex-col shadow-lg">
+              <CardHeader>
+                <CardTitle className="truncate text-brandPrimary">
+                  {product.name}
+                </CardTitle>
+                <CardDescription className="text-sm text-slate-600 h-10 truncate">
+                  {product.process_steps.length} étape(s)
+                  {product.description && ` • ${product.description}`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <div className="flex flex-wrap gap-2">
+                  {product.process_steps.map((step, index) => (
+                    <Badge
+                      key={index}
+                      variant="outline"
+                      className="bg-yellow-100 text-yellow-800 border-yellow-300"
+                    >
+                      {index + 1}. {step}
+                    </Badge>
+                  ))}
+                </div>
+                {product.process_steps.length === 0 && (
+                  <p className="text-xs text-slate-400">
+                    Aucune étape définie.
+                  </p>
+                )}
+              </CardContent>
+              <CardFooter className="flex justify-between mt-auto pt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEditProduct(product)}
+                  className="border-brandPrimary text-brandPrimary hover:bg-brandPrimary hover:text-slate-50"
+                >
+                  <Edit className="h-4 w-4 mr-1" /> Modifier
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleDeleteProduct(product.id, product.name)}
+                  className="bg-red-600 hover:bg-red-700 text-slate-50"
+                >
+                  <Trash className="h-4 w-4 mr-1" /> Supprimer
+                </Button>
+              </CardFooter>
+            </Card>
+          ))
+        )}
+      </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>
-            <DialogTitle>
-              {selectedProduct
-                ? "Modifier le Produit"
-                : "Ajouter un Nouveau Produit"}
+            <DialogTitle className="text-brandPrimary">
+              {selectedProduct ? "Modifier le Produit" : "Ajouter un Produit"}
             </DialogTitle>
-            <DialogDescription>
-              {selectedProduct
-                ? "Modifiez les informations du produit et son processus de fabrication."
-                : "Définissez un nouveau produit et son processus de fabrication étape par étape."}
-            </DialogDescription>
+            {selectedProduct && (
+              <DialogDescription>
+                Modification du produit : {selectedProduct.name}
+              </DialogDescription>
+            )}
           </DialogHeader>
-            <ProductForm
-              product={selectedProduct}
-              onSuccess={handleProductSuccess}
-            />
+          <ProductForm
+            product={selectedProduct}
+            onSuccess={handleProductSuccess}
+            onCancel={() => setIsDialogOpen(false)}
+          />
         </DialogContent>
       </Dialog>
     </div>

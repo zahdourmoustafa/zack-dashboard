@@ -19,7 +19,11 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
   onNextStep,
   onStatusChange,
 }) => {
-  console.log(`[OrderProgress TOP] Props: status='${status}', currentStep=${currentStep}, stepsCount=${steps ? steps.length : 'undefined'}`);
+  console.log(
+    `[OrderProgress TOP] Props: status='${status}', currentStep=${currentStep}, stepsCount=${
+      steps ? steps.length : "undefined"
+    }`
+  );
 
   // Function to handle the first button click (Passer à "Impression")
   const handleFirstButtonClick = () => {
@@ -116,7 +120,7 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
             )}
 
           {/* Complete button if on last step */}
-          {status !== "termine" && currentStep >= steps.length - 1 && (
+          {currentStep >= steps.length - 1 && (
             <Button
               size="sm"
               onClick={onNextStep}

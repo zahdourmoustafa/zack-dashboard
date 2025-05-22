@@ -294,59 +294,73 @@ const ClientDetail = () => {
         </Card>
       </div>
 
-      <h2 className="text-lg sm:text-xl font-semibold mb-4">
-        Historique des Commandes
-      </h2>
-
       <div className="rounded-md border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Produit</TableHead>
-              <TableHead>Qté</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead>Étape</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {clientOrders.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-10">
-                  Aucune commande trouvée
-                </TableCell>
-              </TableRow>
-            ) : (
-              clientOrders.map((order) => (
-                <TableRow
-                  key={order.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => viewOrderDetail(order.id)}
-                >
-                  <TableCell>#{order.id}</TableCell>
-                  <TableCell>{getProductName(order.product_id)}</TableCell>
-                  <TableCell>{order.quantity ?? "N/A"}</TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {formatDistance(new Date(order.created_at), new Date(), {
-                      addSuffix: true,
-                      locale: fr,
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={`${getStatusColor(order.status)}`}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl font-semibold">
+              Historique des Commandes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {clientOrders.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    {/* <TableHead>Produit</TableHead> */}
+                    {/* <TableHead>Qté</TableHead> */}
+                    <TableHead>Date</TableHead>
+                    <TableHead>Statut</TableHead>
+                    {/* <TableHead>Étape</TableHead> */}
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {clientOrders.map((order) => (
+                    <TableRow
+                      key={order.id}
+                      onClick={() => viewOrderDetail(order.id)}
+                      className="cursor-pointer hover:bg-muted/50"
                     >
-                      {getStatusText(order.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{getCurrentStep(order)}</TableCell>
-                </TableRow>
-              ))
+                      <TableCell className="font-medium truncate max-w-[100px] sm:max-w-[150px]">
+                        #{order.id.substring(0, 8)}...
+                      </TableCell>
+                      {/* <TableCell>
+                        {getProductName(order.product_id)}
+                      </TableCell> */}
+                      {/* <TableCell>{order.quantity ?? "N/A"}</TableCell> */}
+                      <TableCell>
+                        {order.order_date
+                          ? formatDistance(
+                              new Date(order.order_date),
+                              new Date(),
+                              { addSuffix: true, locale: fr }
+                            )
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={`${getStatusColor(order.status)}`}
+                        >
+                          {getStatusText(order.status)}
+                        </Badge>
+                      </TableCell>
+                      {/* <TableCell>{getCurrentStep(order)}</TableCell> */}
+                      <TableCell className="text-right">
+                        {/* Placeholder for actions */}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-center text-muted-foreground py-10">
+                Aucune commande trouvée pour ce client.
+              </p>
             )}
-          </TableBody>
-        </Table>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

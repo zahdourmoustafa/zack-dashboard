@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -63,6 +63,7 @@ import {
 const OrderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const [order, setOrder] = useState<Order | null>(null);
@@ -137,7 +138,7 @@ const OrderDetail = () => {
     };
 
     fetchOrderDetails();
-  }, [id, navigate, toast]);
+  }, [id, navigate, toast, location.key]);
 
   if (isLoading || !order) {
     return (
@@ -656,10 +657,10 @@ const OrderDetail = () => {
             return (
               <div
                 key={item.id || index}
-                className="p-4 border rounded-md bg-slate-50/50"
+                className="p-3 sm:p-4 border rounded-md bg-slate-50/50"
               >
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-semibold text-md">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-2 gap-1 sm:gap-0">
+                  <h4 className="font-semibold text-base sm:text-md">
                     {item.product?.name || "Produit non spécifié"}
                   </h4>
                   <Badge
@@ -930,7 +931,7 @@ const OrderDetail = () => {
             #{order.id.substring(0, 8)}
           </span>
         </h1>
-        <div className="flex flex-col md:flex-row items-end md:items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
           <Badge
             variant="outline"
             className={`${getStatusColor(order.status)} text-sm px-3 py-1`}
@@ -946,7 +947,7 @@ const OrderDetail = () => {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-3 gap-4 md:gap-6">
         {/* Client Card - Moved to the top and spans all columns */}
         {order.clients && (
           <div className="md:col-span-3">
@@ -1000,7 +1001,7 @@ const OrderDetail = () => {
                 }
                 value={order.status}
               >
-                <SelectTrigger className="w-full sm:w-[200px] md:w-[180px] border-brandPrimary text-brandPrimary focus:ring-brandSecondary">
+                <SelectTrigger className="w-full border-brandPrimary text-brandPrimary focus:ring-brandSecondary">
                   <SelectValue placeholder="Changer statut commande" />
                 </SelectTrigger>
                 <SelectContent>

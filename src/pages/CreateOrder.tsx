@@ -219,7 +219,9 @@ const CreateOrder = () => {
 
   const handleClientAdded = async () => {
     setIsDialogOpen(false);
-    const { data, error } = await supabase.from("clients").select<"*", Client>("*");
+    const { data, error } = await supabase
+      .from("clients")
+      .select<"*", Client>("*");
     if (error) {
       console.error("Error fetching clients:", error);
       toast({
@@ -232,7 +234,8 @@ const CreateOrder = () => {
     }
     toast({
       title: "Client ajouté",
-      description: "Le nouveau client a été ajouté avec succès. Veuillez le sélectionner dans la liste.",
+      description:
+        "Le nouveau client a été ajouté avec succès. Veuillez le sélectionner dans la liste.",
     });
   };
 
@@ -255,10 +258,26 @@ const CreateOrder = () => {
 
     setIsSubmitting(true);
 
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      toast({
+        title: "Erreur d'authentification",
+        description: "Utilisateur non authentifié. Veuillez vous connecter.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+    const userId = user.id;
+
     const orderPayload = {
       client_id: selectedClientId,
       order_date: orderDate.toISOString(),
       notes: orderNotes,
+      user_id: userId,
     };
 
     try {
@@ -396,249 +415,250 @@ const CreateOrder = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 bg-white min-h-screen">
-      <Button
-        variant="outline"
-        onClick={() =>
-          navigate(isEditMode ? `/orders/${orderIdFromParams}` : "/orders")
-        }
-        className="mb-6 border-brandPrimary text-brandPrimary hover:bg-brandPrimary hover:text-slate-50"
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Retour
-      </Button>
-      <Card className="max-w-4xl mx-auto shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-xl sm:text-2xl font-bold text-brandPrimary">
-            {pageTitle}
-          </CardTitle>
-          <CardDescription>
-            {isEditMode
-              ? "Modifiez les détails de cette commande."
-              : "Remplissez les informations ci-dessous pour créer une nouvelle commande."}
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
-                <Label htmlFor="client_id" className="text-slate-700">
-                  Client
-                </Label>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="flex items-center gap-1 bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold text-xs px-2 py-1 h-auto">
-                      <PlusCircle size={14} className="mr-1" /> Nouveau Client
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Ajouter un Nouveau Client</DialogTitle>
-                    </DialogHeader>
-                    <ClientForm onSuccess={handleClientAdded} />
-                  </DialogContent>
-                </Dialog>
-              </div>
-              <Select
-                onValueChange={handleClientSelectChange}
-                value={selectedClientId}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un client" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Clients</SelectLabel>
-                    {clients.length === 0 ? (
-                      <SelectItem value="no-clients" disabled>
-                        Aucun client disponible
-                      </SelectItem>
-                    ) : (
-                      clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.full_name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="order_date" className="text-slate-700">
-                Date de la Commande
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal border-gray-300 focus:border-brandPrimary focus:ring-brandPrimary",
-                      !orderDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {orderDate ? (
-                      format(orderDate, "PPP", { locale: fr })
-                    ) : (
-                      <span>Choisir une date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={orderDate}
-                    onSelect={setOrderDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="space-y-4">
-              <Label className="text-slate-700 font-semibold">
-                Produits de la Commande
-              </Label>
-              {orderItems.map((item, index) => (
-                <Card
-                  key={item.temp_id || index}
-                  className="p-4 space-y-3 bg-slate-50/50 relative"
+    <>
+      <div className="container mx-auto px-4 py-8 bg-white min-h-screen">
+        <Button
+          onClick={() =>
+            navigate(isEditMode ? `/orders/${orderIdFromParams}` : "/orders")
+          }
+          className="bg-slate-800 text-slate-50 hover:bg-slate-700 px-3 py-1.5 text-sm rounded-md shadow-md "
+        >
+          <ArrowLeft className="mr-1.5 h-4 w-4" />
+          Retour
+        </Button>
+        <Card className="max-w-4xl mx-auto shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-xl sm:text-2xl font-bold text-brandPrimary">
+              {pageTitle}
+            </CardTitle>
+            <CardDescription>
+              {isEditMode
+                ? "Modifiez les détails de cette commande."
+                : "Remplissez les informations ci-dessous pour créer une nouvelle commande."}
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
+                  <Label htmlFor="client_id" className="text-slate-700">
+                    Client
+                  </Label>
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-1 bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold text-xs px-2 py-1 h-auto">
+                        <PlusCircle size={14} className="mr-1" /> Nouveau Client
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Ajouter un Nouveau Client</DialogTitle>
+                      </DialogHeader>
+                      <ClientForm onSuccess={handleClientAdded} />
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <Select
+                  onValueChange={handleClientSelectChange}
+                  value={selectedClientId}
+                  required
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <Label
-                        htmlFor={`product_id_${index}`}
-                        className="text-xs text-slate-600"
-                      >
-                        Produit
-                      </Label>
-                      <Select
-                        onValueChange={(value) =>
-                          handleOrderItemChange(index, "product_id", value)
-                        }
-                        value={item.product_id}
-                        required
-                      >
-                        <SelectTrigger
-                          id={`product_id_${index}`}
-                          className="w-full border-gray-300 focus:border-brandPrimary focus:ring-brandPrimary bg-white"
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Clients</SelectLabel>
+                      {clients.length === 0 ? (
+                        <SelectItem value="no-clients" disabled>
+                          Aucun client disponible
+                        </SelectItem>
+                      ) : (
+                        clients.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.full_name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="order_date" className="text-slate-700">
+                  Date de la Commande
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal border-gray-300 focus:border-brandPrimary focus:ring-brandPrimary",
+                        !orderDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {orderDate ? (
+                        format(orderDate, "PPP", { locale: fr })
+                      ) : (
+                        <span>Choisir une date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={orderDate}
+                      onSelect={setOrderDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-4">
+                <Label className="text-slate-700 font-semibold">
+                  Produits de la Commande
+                </Label>
+                {orderItems.map((item, index) => (
+                  <Card
+                    key={item.temp_id || index}
+                    className="p-4 space-y-3 bg-slate-50/50 relative"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label
+                          htmlFor={`product_id_${index}`}
+                          className="text-xs text-slate-600"
                         >
-                          <SelectValue placeholder="Sélectionner un produit" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectLabel>Produits</SelectLabel>
-                            {products.map((product) => (
-                              <SelectItem key={product.id} value={product.id}>
-                                {product.name}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
+                          Produit
+                        </Label>
+                        <Select
+                          onValueChange={(value) =>
+                            handleOrderItemChange(index, "product_id", value)
+                          }
+                          value={item.product_id}
+                          required
+                        >
+                          <SelectTrigger
+                            id={`product_id_${index}`}
+                            className="w-full border-gray-300 focus:border-brandPrimary focus:ring-brandPrimary bg-white"
+                          >
+                            <SelectValue placeholder="Sélectionner un produit" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectLabel>Produits</SelectLabel>
+                              {products.map((product) => (
+                                <SelectItem key={product.id} value={product.id}>
+                                  {product.name}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label
+                          htmlFor={`quantity_${index}`}
+                          className="text-xs text-slate-600"
+                        >
+                          Quantité
+                        </Label>
+                        <Input
+                          id={`quantity_${index}`}
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) =>
+                            handleOrderItemChange(
+                              index,
+                              "quantity",
+                              e.target.value
+                            )
+                          }
+                          min="1"
+                          required
+                          className="border-gray-300 focus:border-brandPrimary focus:ring-brandPrimary bg-white"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-1">
                       <Label
-                        htmlFor={`quantity_${index}`}
+                        htmlFor={`item_notes_${index}`}
                         className="text-xs text-slate-600"
                       >
-                        Quantité
+                        Notes pour ce produit (optionnel)
                       </Label>
-                      <Input
-                        id={`quantity_${index}`}
-                        type="number"
-                        value={item.quantity}
+                      <Textarea
+                        id={`item_notes_${index}`}
+                        value={item.item_notes}
                         onChange={(e) =>
                           handleOrderItemChange(
                             index,
-                            "quantity",
+                            "item_notes",
                             e.target.value
                           )
                         }
-                        min="1"
-                        required
-                        className="border-gray-300 focus:border-brandPrimary focus:ring-brandPrimary bg-white"
+                        placeholder="Notes spécifiques au produit..."
+                        className="min-h-[60px] border-gray-300 focus:border-brandPrimary focus:ring-brandPrimary bg-white text-sm"
                       />
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor={`item_notes_${index}`}
-                      className="text-xs text-slate-600"
-                    >
-                      Notes pour ce produit (optionnel)
-                    </Label>
-                    <Textarea
-                      id={`item_notes_${index}`}
-                      value={item.item_notes}
-                      onChange={(e) =>
-                        handleOrderItemChange(
-                          index,
-                          "item_notes",
-                          e.target.value
-                        )
-                      }
-                      placeholder="Notes spécifiques au produit..."
-                      className="min-h-[60px] border-gray-300 focus:border-brandPrimary focus:ring-brandPrimary bg-white text-sm"
-                    />
-                  </div>
-                  {orderItems.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeOrderItem(index)}
-                      className="absolute top-1 right-1 text-red-500 hover:text-red-700 p-1 h-auto"
-                      aria-label="Supprimer produit"
-                    >
-                      <XCircle size={16} />
-                    </Button>
-                  )}
-                </Card>
-              ))}
-              <Button
-                type="button"
-                onClick={addOrderItem}
-                variant="outline"
-                className="w-full flex items-center gap-2 border-brandPrimary text-brandPrimary hover:bg-brandPrimary hover:text-slate-50"
-              >
-                <PlusCircle size={16} /> Ajouter un autre produit
-              </Button>
-            </div>
+                    {orderItems.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeOrderItem(index)}
+                        className="absolute top-1 right-1 text-red-500 hover:text-red-700 p-1 h-auto"
+                        aria-label="Supprimer produit"
+                      >
+                        <XCircle size={16} />
+                      </Button>
+                    )}
+                  </Card>
+                ))}
+                <Button
+                  type="button"
+                  onClick={addOrderItem}
+                  variant="outline"
+                  className="w-full flex items-center gap-2 border-brandPrimary text-brandPrimary hover:bg-brandPrimary hover:text-slate-50"
+                >
+                  <PlusCircle size={16} /> Ajouter un autre produit
+                </Button>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="orderNotes" className="text-slate-700">
-                Notes Générales pour la Commande (optionnel)
-              </Label>
-              <Textarea
-                id="orderNotes"
-                name="orderNotes"
-                value={orderNotes}
-                onChange={(e) => setOrderNotes(e.target.value)}
-                placeholder="Ajoutez des notes ou instructions générales pour toute la commande..."
-                className="min-h-[100px] border-gray-300 focus:border-brandPrimary focus:ring-brandPrimary"
-              />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button
-              type="submit"
-              disabled={isSubmitting || isLoading}
-              className="w-full bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold"
-            >
-              {isSubmitting
-                ? isEditMode
-                  ? "Enregistrement..."
-                  : "Création en cours..."
-                : submitButtonText}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+              <div className="space-y-2">
+                <Label htmlFor="orderNotes" className="text-slate-700">
+                  Notes Générales pour la Commande (optionnel)
+                </Label>
+                <Textarea
+                  id="orderNotes"
+                  name="orderNotes"
+                  value={orderNotes}
+                  onChange={(e) => setOrderNotes(e.target.value)}
+                  placeholder="Ajoutez des notes ou instructions générales pour toute la commande..."
+                  className="min-h-[100px] border-gray-300 focus:border-brandPrimary focus:ring-brandPrimary"
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button
+                type="submit"
+                disabled={isSubmitting || isLoading}
+                className="w-full bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold"
+              >
+                {isSubmitting
+                  ? isEditMode
+                    ? "Enregistrement..."
+                    : "Création en cours..."
+                  : submitButtonText}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    </>
   );
 };
 

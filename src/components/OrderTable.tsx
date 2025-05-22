@@ -278,26 +278,23 @@ const OrderTable = ({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {orderStatus !== "termine" &&
-                          orderStatus !== "annule" &&
-                          orderStatus !== "reporte" && (
-                            <DropdownMenuItem
-                              onClick={() =>
-                                changeOrderStatus(order, "reporte")
-                              }
-                            >
-                              Marquer Reporté
-                            </DropdownMenuItem>
-                          )}
+                        {(orderStatus === "en_attente" || orderStatus === "en_cours") && (
+                          <DropdownMenuItem
+                            onClick={() =>
+                              changeOrderStatus(order, "reporte")
+                            }
+                          >
+                            Marquer Reporté
+                          </DropdownMenuItem>
+                        )}
 
-                        {orderStatus !== "annule" &&
-                          orderStatus !== "termine" && (
-                            <DropdownMenuItem
-                              onClick={() => changeOrderStatus(order, "annule")}
-                            >
-                              Marquer Annulé
-                            </DropdownMenuItem>
-                          )}
+                        {(orderStatus === "en_attente" || orderStatus === "en_cours" || orderStatus === "reporte") && (
+                          <DropdownMenuItem
+                            onClick={() => changeOrderStatus(order, "annule")}
+                          >
+                            Marquer Annulé
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => onCloneOrder(order.id)}>
                           <CopyIcon className="mr-2 h-4 w-4" />
                           Cloner Commande

@@ -3,14 +3,20 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
 // Use environment variables for better security
+console.log("[Debug] VITE_SUPABASE_URL:", import.meta.env.VITE_SUPABASE_URL);
 const SUPABASE_URL =
   import.meta.env.VITE_SUPABASE_URL ||
   "https://bzyvoqvtijfgutrlteev.supabase.co";
+console.log("[Debug] Final SUPABASE_URL:", SUPABASE_URL);
+
 const SUPABASE_ANON_KEY =
   import.meta.env.VITE_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ6eXZvcXZ0aWpmZ3V0cmx0ZWV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1NjIxOTMsImV4cCI6MjA2MzEzODE5M30.Oz5R8jmU88O6iDgb-GWoPDTeFwEGfe9SqnWuRysYQXc";
+console.log("[Debug] VITE_SUPABASE_ANON_KEY exists:", !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+console.log("[Debug] Final SUPABASE_ANON_KEY exists:", !!SUPABASE_ANON_KEY);
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
+console.log("[Debug] Supabase client created");
