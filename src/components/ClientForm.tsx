@@ -38,12 +38,11 @@ interface ClientFormProps {
     full_name: string;
     phone: string;
     email: string;
-  } | null; // Allow client to be null for new client form page
+  };
   onSuccess: () => void;
-  onCancel: () => void; // Add onCancel prop
 }
 
-const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
+const ClientForm = ({ client, onSuccess }: ClientFormProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -90,9 +89,11 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
       } else {
         // Add new client
         const insertPayload = {
-          ...baseSubmissionData,
+            ...baseSubmissionData,
         };
-        const { error } = await supabase.from("clients").insert(insertPayload);
+        const { error } = await supabase
+          .from("clients")
+          .insert(insertPayload);
 
         if (error) throw error;
       }
@@ -123,10 +124,7 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onFormSubmit)}
-        className="space-y-4" // Removed overflow-y-auto and max-h as it's a page now
-      >
+      <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="full_name"
@@ -173,20 +171,10 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
           )}
         />
 
-        <div className="flex justify-end pt-4 gap-2">
-          {" "}
-          {/* Added gap-2 */}
+        <div className="flex justify-end pt-4">
           <Button
             type="button"
-            variant="outline" // Added variant for cancel button
-            onClick={onCancel} // Call onCancel when cancel button is clicked
-            disabled={isSubmitting}
-          >
-            Annuler
-          </Button>
-          <Button
-            type="submit" // Changed from button to submit
-            // onClick={() => form.handleSubmit(onFormSubmit)()} // Removed onClick, using form's onSubmit
+            onClick={() => form.handleSubmit(onFormSubmit)()}
             disabled={isSubmitting || form.formState.isSubmitting}
             className="bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold"
           >

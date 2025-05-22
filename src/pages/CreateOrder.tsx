@@ -454,10 +454,7 @@ const CreateOrder = () => {
                       <DialogHeader>
                         <DialogTitle>Ajouter un Nouveau Client</DialogTitle>
                       </DialogHeader>
-                      <ClientForm
-                        onSuccess={handleClientAdded}
-                        onCancel={() => setIsDialogOpen(false)}
-                      />
+                      <ClientForm onSuccess={handleClientAdded} />
                     </DialogContent>
                   </Dialog>
                 </div>

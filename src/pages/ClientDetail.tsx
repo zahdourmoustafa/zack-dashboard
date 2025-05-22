@@ -231,12 +231,7 @@ const ClientDetail = () => {
             </DialogHeader>
             <ClientForm
               client={client}
-              onSuccess={() => {
-                setIsDialogOpen(false);
-                // Optionally, refetch client data if needed after update
-                // fetchClientData(); // You'd need to define or adjust fetchClientData to be callable here
-              }}
-              onCancel={() => setIsDialogOpen(false)}
+              onSuccess={() => setIsDialogOpen(false)}
             />
           </DialogContent>
         </Dialog>
