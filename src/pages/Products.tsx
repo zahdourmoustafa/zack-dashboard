@@ -178,7 +178,7 @@ const ProductsPage = () => {
           onClick={handleAddNewProduct}
           className="flex items-center gap-2 bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold"
         >
-          <Plus className="h-4 w-4" /> new  Produit
+          <Plus className="h-4 w-4" /> new Produit
         </Button>
       </div>
 
