@@ -10,14 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, Edit, Trash } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import ProductForm from "@/components/ProductForm";
 import { useToast } from "@/hooks/use-toast";
@@ -41,8 +33,6 @@ const ProductsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isLoadingPage, setIsLoadingPage] = useState(true);
   const navigate = useNavigate();
 
@@ -108,8 +98,7 @@ const ProductsPage = () => {
   }, [searchQuery, products]);
 
   const handleEditProduct = (product: Product) => {
-    setSelectedProduct(product);
-    setIsDialogOpen(true);
+    navigate(`/products/edit/${product.id}`);
   };
 
   const handleDeleteProduct = async (
@@ -150,13 +139,12 @@ const ProductsPage = () => {
   };
 
   const handleAddNewProduct = () => {
-    setSelectedProduct(null);
-    setIsDialogOpen(true);
+    navigate("/products/new");
   };
 
   const handleProductSuccess = () => {
-    setIsDialogOpen(false);
     fetchProducts();
+    navigate("/products");
   };
 
   // Display loading indicator if Clerk/Supabase is initializing or products are fetching
@@ -252,26 +240,6 @@ const ProductsPage = () => {
           ))
         )}
       </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-brandPrimary">
-              {selectedProduct ? "Modifier le Produit" : "Ajouter un Produit"}
-            </DialogTitle>
-            {selectedProduct && (
-              <DialogDescription>
-                Modification du produit : {selectedProduct.name}
-              </DialogDescription>
-            )}
-          </DialogHeader>
-          <ProductForm
-            product={selectedProduct}
-            onSuccess={handleProductSuccess}
-            onCancel={() => setIsDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

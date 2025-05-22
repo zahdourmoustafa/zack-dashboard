@@ -13,6 +13,7 @@ import Dashboard from "./pages/Index";
 import ClientsPage from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import ProductsPage from "./pages/Products";
+import ProductFormPage from "./pages/ProductFormPage";
 import CreateOrder from "./pages/CreateOrder";
 import OrderDetail from "./pages/OrderDetail";
 import OrdersPage from "./pages/OrdersPage";
@@ -155,6 +156,14 @@ function App() {
                             element={<ClientDetail />}
                           />
                           <Route path="/products" element={<ProductsPage />} />
+                          <Route
+                            path="/products/new"
+                            element={<ProductFormPage />}
+                          />
+                          <Route
+                            path="/products/edit/:id"
+                            element={<ProductFormPage />}
+                          />
                           <Route
                             path="/orders/create"
                             element={<CreateOrder />}
