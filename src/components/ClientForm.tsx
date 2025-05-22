@@ -124,7 +124,7 @@ const ClientForm = ({ client, onSuccess }: ClientFormProps) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-4 overflow-y-auto ">
         <FormField
           control={form.control}
           name="full_name"
