@@ -4,93 +4,94 @@ import { supabase } from "../../lib/supabaseClient";
 // Basic styling for the component - consider moving to a CSS file for larger applications
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '80vh', // Take up most of the viewport height
-    padding: '20px',
-    fontFamily: 'Arial, sans-serif',
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "80vh", // Take up most of the viewport height
+    padding: "20px",
+    fontFamily: "Arial, sans-serif",
   },
   card: {
-    backgroundColor: '#ffffff',
-    padding: '40px',
-    borderRadius: '12px',
-    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-    width: '100%',
-    maxWidth: '420px',
-    textAlign: 'center',
+    backgroundColor: "#ffffff",
+    padding: "40px",
+    borderRadius: "12px",
+    boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
+    width: "100%",
+    maxWidth: "420px",
+    textAlign: "center",
   },
   title: {
-    fontSize: '28px',
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: '10px',
+    fontSize: "28px",
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: "10px",
   },
   subtitle: {
-    fontSize: '20px',
-    color: '#555',
-    marginBottom: '30px',
+    fontSize: "20px",
+    color: "#555",
+    marginBottom: "30px",
   },
   form: {
-    width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '15px',
+    width: "100%",
+    display: "flex",
+    flexDirection: "column",
+    gap: "15px",
   },
   inputGroup: {
-    textAlign: 'left',
+    textAlign: "left",
   },
   label: {
-    display: 'block',
-    fontSize: '14px',
-    color: '#444',
-    marginBottom: '5px',
+    display: "block",
+    fontSize: "14px",
+    color: "#444",
+    marginBottom: "5px",
   },
   input: {
-    width: '100%',
-    padding: '12px 15px',
-    border: '1px solid #ddd',
-    borderRadius: '8px',
-    boxSizing: 'border-box',
-    fontSize: '16px',
+    width: "100%",
+    padding: "12px 15px",
+    border: "1px solid #ddd",
+    borderRadius: "8px",
+    boxSizing: "border-box",
+    fontSize: "16px",
   },
   button: {
-    backgroundColor: '#007bff', // A nice blue
-    color: 'white',
-    padding: '12px 15px',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    transition: 'background-color 0.2s ease',
+    backgroundColor: "#fbd404", // A nice blue
+    color: "white",
+    padding: "12px 15px",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontSize: "16px",
+    fontWeight: "bold",
+    transition: "background-color 0.2s ease",
   },
-  buttonHover: { // Example: for hover, though inline styles don't directly support pseudo-classes
-    backgroundColor: '#0056b3',
+  buttonHover: {
+    // Example: for hover, though inline styles don't directly support pseudo-classes
+    backgroundColor: "#fbec3b",
   },
   toggleButton: {
-    background: 'none',
-    border: 'none',
-    color: '#007bff',
-    cursor: 'pointer',
-    fontSize: '14px',
-    marginTop: '20px',
-    textDecoration: 'underline',
+    background: "none",
+    border: "none",
+    color: "#FFD600",
+    cursor: "pointer",
+    fontSize: "14px",
+    marginTop: "20px",
+    textDecoration: "underline",
   },
   message: {
-    marginTop: '15px',
-    padding: '10px',
-    borderRadius: '6px',
-    textAlign: 'center',
+    marginTop: "15px",
+    padding: "10px",
+    borderRadius: "6px",
+    textAlign: "center",
   },
   successMessage: {
-    backgroundColor: '#e6fffa',
-    color: '#00796b',
+    backgroundColor: "#e6fffa",
+    color: "#00796b",
   },
   errorMessage: {
-    backgroundColor: '#ffebee',
-    color: '#c62828',
+    backgroundColor: "#ffebee",
+    color: "#c62828",
   },
 };
 
@@ -116,7 +117,7 @@ const AuthComponent: React.FC = () => {
         });
         if (signUpError) throw signUpError;
         setMessage(
-          "Sign up successful! Please check your email to confirm your account."
+          "Inscription réussie ! Veuillez vérifier votre e-mail pour confirmer votre compte."
         );
         console.log("Sign up response:", data);
       } else {
@@ -126,7 +127,7 @@ const AuthComponent: React.FC = () => {
             password,
           });
         if (signInError) throw signInError;
-        setMessage("Sign in successful!");
+        setMessage("Connexion réussie !");
         console.log("Sign in response:", data);
         // Session is automatically handled by supabase-js, App.tsx will react to auth state change
       }
@@ -140,11 +141,15 @@ const AuthComponent: React.FC = () => {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h1 style={styles.title}>Welcome to PNCPrintDashboard</h1>
-        <h2 style={styles.subtitle}>{isSignUp ? 'Create Your Account' : 'Sign In to Your Account'}</h2>
+        <h1 style={styles.title}>Bienvenue sur PNCPrint Dashboard</h1>
+        <h2 style={styles.subtitle}>
+          {isSignUp ? "Créez votre compte" : "Connectez-vous à votre compte"}
+        </h2>
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.inputGroup}>
-            <label htmlFor="email" style={styles.label}>Email Address</label>
+            <label htmlFor="email" style={styles.label}>
+              Adresse e-mail
+            </label>
             <input
               id="email"
               type="email"
@@ -156,7 +161,9 @@ const AuthComponent: React.FC = () => {
             />
           </div>
           <div style={styles.inputGroup}>
-            <label htmlFor="password" style={styles.label}>Password</label>
+            <label htmlFor="mot de passe" style={styles.label}>
+              Mot de passe
+            </label>
             <input
               id="password"
               type="password"
@@ -167,29 +174,49 @@ const AuthComponent: React.FC = () => {
               placeholder="••••••••"
             />
           </div>
-          <button 
-            type="submit" 
-            disabled={loading} 
+          <button
+            type="submit"
+            disabled={loading}
             style={styles.button}
-            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = styles.buttonHover.backgroundColor!)}
-            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = styles.button.backgroundColor!)}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.backgroundColor =
+                styles.buttonHover.backgroundColor!)
+            }
+            onMouseOut={(e) =>
+              (e.currentTarget.style.backgroundColor =
+                styles.button.backgroundColor!)
+            }
           >
-            {loading ? 'Processing...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+            {loading
+              ? "Traitement en cours..."
+              : isSignUp
+              ? "S'inscrire"
+              : "Se connecter"}
           </button>
         </form>
-        <button 
+        <button
           onClick={() => {
             setIsSignUp(!isSignUp);
-            setMessage('');
-            setError('');
-          }} 
-          disabled={loading} 
+            setMessage("");
+            setError("");
+          }}
+          disabled={loading}
           style={styles.toggleButton}
         >
-          {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+          {isSignUp
+            ? "Vous avez déjà un compte ? Se connecter"
+            : "Besoin d'un compte ? S'inscrire"}
         </button>
-        {message && <p style={{...styles.message, ...styles.successMessage}}>{message}</p>}
-        {error && <p style={{...styles.message, ...styles.errorMessage}}>Error: {error}</p>}
+        {message && (
+          <p style={{ ...styles.message, ...styles.successMessage }}>
+            {message}
+          </p>
+        )}
+        {error && (
+          <p style={{ ...styles.message, ...styles.errorMessage }}>
+            Erreur : {error}
+          </p>
+        )}
       </div>
     </div>
   );
