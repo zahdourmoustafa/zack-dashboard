@@ -195,7 +195,10 @@ const ClientsPage = () => {
                 client.
               </DialogDescription>
             </DialogHeader>
-            <ClientForm onSuccess={handleClientAdded} />
+            <ClientForm
+              onSuccess={handleClientAdded}
+              onCancel={() => setIsAddClientDialogOpen(false)}
+            />
           </DialogContent>
         </Dialog>
       </div>

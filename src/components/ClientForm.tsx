@@ -38,11 +38,12 @@ interface ClientFormProps {
     full_name: string;
     phone: string;
     email: string;
-  };
+  } | null; // Allow client to be null for new client form page
   onSuccess: () => void;
+  onCancel: () => void; // Add onCancel prop
 }
 
-const ClientForm = ({ client, onSuccess }: ClientFormProps) => {
+const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -124,7 +125,7 @@ const ClientForm = ({ client, onSuccess }: ClientFormProps) => {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onFormSubmit)}
-        className="space-y-4 overflow-y-auto max-h-[70vh] "
+        className="space-y-4" // Removed overflow-y-auto and max-h as it's a page now
       >
         <FormField
           control={form.control}
@@ -172,10 +173,20 @@ const ClientForm = ({ client, onSuccess }: ClientFormProps) => {
           )}
         />
 
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end pt-4 gap-2">
+          {" "}
+          {/* Added gap-2 */}
           <Button
             type="button"
-            onClick={() => form.handleSubmit(onFormSubmit)()}
+            variant="outline" // Added variant for cancel button
+            onClick={onCancel} // Call onCancel when cancel button is clicked
+            disabled={isSubmitting}
+          >
+            Annuler
+          </Button>
+          <Button
+            type="submit" // Changed from button to submit
+            // onClick={() => form.handleSubmit(onFormSubmit)()} // Removed onClick, using form's onSubmit
             disabled={isSubmitting || form.formState.isSubmitting}
             className="bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold"
           >

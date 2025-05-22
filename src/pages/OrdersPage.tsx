@@ -237,14 +237,14 @@ const OrdersPage = () => {
           status,
           current_step_index,
           item_notes,
-          product:product_id (
+          products:product_id (
             name,
             process_steps
           ),
-          order:order_id (
+          orders:order_id (
             id, 
             order_date,
-            client:client_id (
+            clients:client_id (
               full_name
             )
           )
@@ -264,15 +264,18 @@ const OrdersPage = () => {
 
       const transformedData = data.map((item: any) => ({
         id: item.id,
-        order_id: item.order.id,
-        title: item.product?.name || "Produit inconnu",
+        order_id: item.orders.id,
+        title: item.products?.name || "Produit inconnu",
         quantity: item.quantity,
         status: item.status || "en_attente",
         current_step_index: item.current_step_index || 0,
         item_notes: item.item_notes,
-        product: item.product || { name: "Produit inconnu", process_steps: [] },
-        clientName: item.order?.client?.full_name || "Client inconnu",
-        order_date: item.order.order_date,
+        product: item.products || {
+          name: "Produit inconnu",
+          process_steps: [],
+        },
+        clientName: item.orders?.clients?.full_name || "Client inconnu",
+        order_date: item.orders.order_date,
       }));
 
       setOrderItems(transformedData);

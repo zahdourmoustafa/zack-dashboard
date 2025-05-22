@@ -103,7 +103,7 @@ const OrderDetail = () => {
               status,
               current_step_index,
               product_id,
-              product:product_id (
+              products:product_id (
                 id, 
                 name, 
                 description, 
