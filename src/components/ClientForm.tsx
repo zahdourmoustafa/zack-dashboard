@@ -74,6 +74,8 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
       email: data.email || "", // Ensures email value is always a string (or empty string)
     };
 
+    let createdClientId: string | undefined = undefined; // Declare createdClientId here
+
     try {
       if (client?.id) {
         // Update existing client
@@ -99,7 +101,7 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
           .single();
 
         if (error) throw error;
-        const createdClientId = newClient?.id;
+        createdClientId = newClient?.id; // Assign here, no new declaration
       }
 
       // Show success toast only after successful database operation
