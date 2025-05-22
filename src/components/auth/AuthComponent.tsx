@@ -119,7 +119,6 @@ const AuthComponent: React.FC = () => {
         setMessage(
           "Inscription réussie ! Veuillez vérifier votre e-mail pour confirmer votre compte."
         );
-        console.log("Sign up response:", data);
       } else {
         const { data, error: signInError } =
           await supabase.auth.signInWithPassword({
@@ -128,11 +127,9 @@ const AuthComponent: React.FC = () => {
           });
         if (signInError) throw signInError;
         setMessage("Connexion réussie !");
-        console.log("Sign in response:", data);
         // Session is automatically handled by supabase-js, App.tsx will react to auth state change
       }
     } catch (err: any) {
-      console.error("Authentication error:", err.message);
       setError(err.message || "An unexpected error occurred.");
     }
     setLoading(false);

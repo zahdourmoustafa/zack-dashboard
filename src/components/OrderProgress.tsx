@@ -19,12 +19,6 @@ const OrderProgress: React.FC<OrderProgressProps> = ({
   onNextStep,
   onStatusChange,
 }) => {
-  console.log(
-    `[OrderProgress TOP] Props: status='${status}', currentStep=${currentStep}, stepsCount=${
-      steps ? steps.length : "undefined"
-    }`
-  );
-
   // Function to handle the first button click (Passer à "Impression")
   const handleFirstButtonClick = () => {
     // Change status from en_attente to en_cours

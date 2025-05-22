@@ -4,7 +4,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Trash2, ClipboardPlus, PackagePlus } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Trash2,
+  ClipboardPlus,
+  PackagePlus,
+  Clock,
+  Loader2,
+  Package,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import OrderTable from "@/components/OrderTable";
 import { useNavigate } from "react-router-dom";
@@ -560,10 +569,11 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <Card className="shadow-lg">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-brandPrimary">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
               Total Commandes
             </CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-black">
@@ -572,10 +582,9 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         <Card className="shadow-lg hidden sm:block">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-orange-500">
-              En Attente
-            </CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">En Attente</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-500">
@@ -584,10 +593,9 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         <Card className="shadow-lg hidden sm:block">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-blue-600">
-              En Cours
-            </CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">En Cours</CardTitle>
+            <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
