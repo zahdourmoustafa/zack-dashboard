@@ -54,7 +54,7 @@ interface Product extends ProductType {}
 
 interface FormOrderItem {
   product_id: string;
-  quantity: number;
+  quantity: string;
   item_notes: string;
   temp_id?: string;
   id?: string;
@@ -72,7 +72,7 @@ const CreateOrder = () => {
   const [orderItems, setOrderItems] = useState<FormOrderItem[]>([
     {
       product_id: "",
-      quantity: 1,
+      quantity: "1",
       item_notes: "",
       temp_id: Date.now().toString(),
     },
@@ -99,7 +99,10 @@ const CreateOrder = () => {
           .from("products")
           .select("*");
         if (productsError) throw productsError;
-        setProducts(productsData || []);
+        const sortedProducts = (productsData || []).sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+        setProducts(sortedProducts);
 
         if (isEditMode && orderIdFromParams) {
           setPageTitle("Modifier la Commande");
@@ -142,7 +145,7 @@ const CreateOrder = () => {
             const fetchedOrderItems = (existingOrderData.order_items || []).map(
               (item: any) => ({
                 ...item,
-                quantity: item.quantity || 1,
+                quantity: item.quantity || "1",
                 item_notes: item.item_notes || "",
               })
             );
@@ -152,7 +155,7 @@ const CreateOrder = () => {
                 : [
                     {
                       product_id: "",
-                      quantity: 1,
+                      quantity: "1",
                       item_notes: "",
                       temp_id: Date.now().toString(),
                     },
@@ -186,7 +189,7 @@ const CreateOrder = () => {
       ...orderItems,
       {
         product_id: "",
-        quantity: 1,
+        quantity: "1",
         item_notes: "",
         temp_id: Date.now().toString(),
       },
@@ -209,11 +212,23 @@ const CreateOrder = () => {
   const handleOrderItemChange = (
     index: number,
     field: keyof FormOrderItem,
-    value: string | number
+    value: string
   ) => {
     const newItems = [...orderItems];
-    (newItems[index] as any)[field] =
-      field === "quantity" ? Math.max(1, Number(value)) : value;
+    (newItems[index] as any)[field] = value;
+    setOrderItems(newItems);
+  };
+
+  const handleQuantityBlur = (index: number) => {
+    const item = orderItems[index];
+    let currentQuantity = parseInt(item.quantity, 10);
+
+    if (isNaN(currentQuantity) || currentQuantity < 1) {
+      currentQuantity = 1;
+    }
+
+    const newItems = [...orderItems];
+    newItems[index].quantity = currentQuantity.toString();
     setOrderItems(newItems);
   };
 
@@ -244,7 +259,12 @@ const CreateOrder = () => {
 
     if (
       !selectedClientId ||
-      orderItems.some((item) => !item.product_id || item.quantity < 1) ||
+      orderItems.some(
+        (item) =>
+          !item.product_id ||
+          parseInt(item.quantity, 10) < 1 ||
+          isNaN(parseInt(item.quantity, 10))
+      ) ||
       !orderDate
     ) {
       toast({
@@ -323,7 +343,7 @@ const CreateOrder = () => {
             .from("order_items")
             .update({
               product_id: item.product_id,
-              quantity: item.quantity,
+              quantity: parseInt(item.quantity, 10),
               item_notes: item.item_notes,
               updated_at: new Date().toISOString(),
             })
@@ -335,7 +355,7 @@ const CreateOrder = () => {
           const newItemsPayload = itemsToAdd.map((item) => ({
             order_id: orderIdFromParams,
             product_id: item.product_id,
-            quantity: item.quantity,
+            quantity: parseInt(item.quantity, 10),
             item_notes: item.item_notes,
           }));
           const { error: addItemError } = await supabase
@@ -370,7 +390,7 @@ const CreateOrder = () => {
         const orderItemsPayload = orderItems.map((item) => ({
           order_id: newOrder.id,
           product_id: item.product_id,
-          quantity: item.quantity,
+          quantity: parseInt(item.quantity, 10),
           item_notes: item.item_notes,
         }));
 
@@ -577,6 +597,7 @@ const CreateOrder = () => {
                               e.target.value
                             )
                           }
+                          onBlur={() => handleQuantityBlur(index)}
                           min="1"
                           required
                           className="border-gray-300 focus:border-brandPrimary focus:ring-brandPrimary bg-white"

@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Edit, Trash } from "lucide-react";
+import { Search, Plus, Edit, Trash, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import ProductForm from "@/components/ProductForm";
 import { useToast } from "@/hooks/use-toast";
@@ -94,11 +94,73 @@ const ProductsPage = () => {
     const filtered = products.filter((product) =>
       product.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    setFilteredProducts(filtered);
+    // Sort the filtered products alphabetically by name
+    const sortedAndFiltered = filtered.sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+    setFilteredProducts(sortedAndFiltered);
   }, [searchQuery, products]);
 
   const handleEditProduct = (product: Product) => {
     navigate(`/products/edit/${product.id}`);
+  };
+
+  const handleCloneProduct = async (productIdToClone: string) => {
+    if (!supabase) return;
+
+    try {
+      setIsLoadingPage(true); // Reuse existing loading state or add a specific one
+
+      // 1. Fetch the original product
+      const { data: originalProduct, error: fetchError } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", productIdToClone)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!originalProduct) {
+        toast({
+          title: "Erreur",
+          description: "Produit original non trouvé.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // 2. Prepare the new product data
+      const clonedProductData = {
+        name: `Copie de ${originalProduct.name}`,
+        description: originalProduct.description,
+        process_steps: originalProduct.process_steps || [], // Ensure process_steps is an array
+        // user_id will be set by RLS/default if applicable
+        // created_at and updated_at will be set by Supabase default or here
+      };
+
+      // 3. Insert the new product
+      const { error: insertError } = await supabase
+        .from("products")
+        .insert(clonedProductData);
+
+      if (insertError) throw insertError;
+
+      toast({
+        title: "Produit Cloné",
+        description: `Le produit "${originalProduct.name}" a été cloné avec succès.`,
+      });
+
+      // 4. Refresh the products list
+      fetchProducts(); // This will re-fetch and re-sort
+    } catch (error: any) {
+      console.error("Error cloning product:", error);
+      toast({
+        title: "Erreur de Clonage",
+        description: error.message || "Impossible de cloner le produit.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingPage(false);
+    }
   };
 
   const handleDeleteProduct = async (
@@ -190,7 +252,11 @@ const ProductsPage = () => {
           </div>
         ) : (
           filteredProducts.map((product) => (
-            <Card key={product.id} className="flex flex-col shadow-lg">
+            <Card
+              key={product.id}
+              className="flex flex-col shadow-lg hover:shadow-xl transition-shadow duration-200 cursor-pointer"
+              onClick={() => navigate(`/products/${product.id}`)}
+            >
               <CardHeader>
                 <CardTitle className="truncate text-brandPrimary">
                   {product.name}
@@ -218,20 +284,45 @@ const ProductsPage = () => {
                   </p>
                 )}
               </CardContent>
-              <CardFooter className="flex justify-between mt-auto pt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleEditProduct(product)}
-                  className="border-brandPrimary text-brandPrimary hover:bg-brandPrimary hover:text-slate-50"
-                >
-                  <Edit className="h-4 w-4 mr-1" /> Modifier
-                </Button>
+              <CardFooter className="flex justify-between items-center mt-auto pt-4">
+                {/* Left side: Modifier and Cloner buttons stacked vertically */}
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditProduct(product);
+                    }}
+                    className="border-brandPrimary text-brandPrimary hover:bg-brandPrimary hover:text-slate-50 w-full"
+                    // Added w-full to make them take the same width within their vertical stack
+                  >
+                    <Edit className="h-4 w-4 mr-1" /> Modifier
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCloneProduct(product.id);
+                    }}
+                    className="border-sky-500 text-sky-600 hover:bg-sky-500 hover:text-slate-50 w-full"
+                    aria-label="Cloner le produit"
+                  >
+                    <Copy className="h-4 w-4 mr-1" /> Cloner
+                  </Button>
+                </div>
+
+                {/* Right side: Supprimer button */}
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => handleDeleteProduct(product.id, product.name)}
-                  className="bg-red-600 hover:bg-red-700 text-slate-50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteProduct(product.id, product.name);
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-slate-50 self-end"
+                  // Added self-end to try and align it better if heights differ, or remove if not needed
                 >
                   <Trash className="h-4 w-4 mr-1" /> Supprimer
                 </Button>
