@@ -30,6 +30,13 @@ const AVAILABLE_PROCESS_STEPS_DEFAULT = [
 ];
 const FINAL_STEP = "Emballage";
 
+interface ProcessStepOption {
+  id: string;
+  name: string;
+  user_id?: string;
+  created_at?: string;
+}
+
 const ProductForm = ({ product, onSuccess, onCancel }: ProductFormProps) => {
   const { toast } = useToast();
   const { supabase, isLoading: isSupabaseLoading } = useSupabase();
@@ -45,43 +52,78 @@ const ProductForm = ({ product, onSuccess, onCancel }: ProductFormProps) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newCustomStep, setNewCustomStep] = useState("");
-  const [availableProcessSteps, setAvailableProcessSteps] = useState(() => {
-    const customStepsFromProduct = product?.process_steps
-      ? product.process_steps.filter(
-          (step) =>
-            step !== FINAL_STEP &&
-            !AVAILABLE_PROCESS_STEPS_DEFAULT.includes(step)
-        )
-      : [];
-    return [
-      ...AVAILABLE_PROCESS_STEPS_DEFAULT,
-      ...new Set(customStepsFromProduct),
-    ];
-  });
+  const [availableProcessSteps, setAvailableProcessSteps] = useState<string[]>(
+    []
+  );
+  const [isLoadingSteps, setIsLoadingSteps] = useState(true);
+
+  const fetchAvailableSteps = async () => {
+    if (!supabase) return;
+    setIsLoadingSteps(true);
+    try {
+      const { data, error } = await supabase
+        .from("process_step_options")
+        .select("name");
+
+      if (error) throw error;
+
+      const fetchedStepNames = data ? data.map((item) => item.name) : [];
+
+      const combinedSteps = Array.from(
+        new Set([...AVAILABLE_PROCESS_STEPS_DEFAULT, ...fetchedStepNames])
+      );
+      setAvailableProcessSteps(combinedSteps);
+    } catch (error) {
+      console.error("Error fetching available process steps:", error);
+      toast({
+        title: "Erreur",
+        description:
+          "Impossible de charger les étapes de processus disponibles.",
+        variant: "destructive",
+      });
+      setAvailableProcessSteps([...AVAILABLE_PROCESS_STEPS_DEFAULT]);
+    } finally {
+      setIsLoadingSteps(false);
+    }
+  };
+
+  useEffect(() => {
+    if (supabase) {
+      fetchAvailableSteps();
+    }
+  }, [supabase]);
 
   useEffect(() => {
     const currentInitialSelectedSteps = product?.process_steps
       ? product.process_steps.filter((step) => step !== FINAL_STEP)
       : [];
 
-    const customStepsFromProduct = product?.process_steps
-      ? product.process_steps.filter(
-          (step) =>
-            step !== FINAL_STEP &&
-            !AVAILABLE_PROCESS_STEPS_DEFAULT.includes(step)
-        )
-      : [];
-    setAvailableProcessSteps([
-      ...AVAILABLE_PROCESS_STEPS_DEFAULT,
-      ...new Set(customStepsFromProduct),
-    ]);
+    if (product?.process_steps && !isLoadingSteps) {
+      const stepsFromProductNotInFetchedAvailable =
+        product.process_steps.filter(
+          (stepFromProd) =>
+            stepFromProd !== FINAL_STEP &&
+            !AVAILABLE_PROCESS_STEPS_DEFAULT.includes(stepFromProd) &&
+            !availableProcessSteps.includes(stepFromProd)
+        );
+      if (stepsFromProductNotInFetchedAvailable.length > 0) {
+        setAvailableProcessSteps((prevFetchedAndMergedSteps) =>
+          Array.from(
+            new Set([
+              ...prevFetchedAndMergedSteps,
+              ...stepsFromProductNotInFetchedAvailable,
+            ])
+          )
+        );
+      }
+    }
 
     setFormData({
       name: product?.name || "",
       description: product?.description || "",
       process_steps: currentInitialSelectedSteps,
     });
-  }, [product]);
+  }, [product, isLoadingSteps, supabase]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -114,7 +156,7 @@ const ProductForm = ({ product, onSuccess, onCancel }: ProductFormProps) => {
     });
   };
 
-  const handleAddCustomStep = () => {
+  const handleAddCustomStep = async () => {
     const trimmedStep = newCustomStep.trim();
     if (
       trimmedStep &&
@@ -127,6 +169,40 @@ const ProductForm = ({ product, onSuccess, onCancel }: ProductFormProps) => {
         process_steps: [...prevData.process_steps, trimmedStep],
       }));
       setNewCustomStep("");
+
+      if (supabase) {
+        try {
+          const { error } = await supabase
+            .from("process_step_options")
+            .insert([{ name: trimmedStep }]);
+
+          if (error) {
+            setAvailableProcessSteps((prev) =>
+              prev.filter((s) => s !== trimmedStep)
+            );
+            setFormData((prevData) => ({
+              ...prevData,
+              process_steps: prevData.process_steps.filter(
+                (s) => s !== trimmedStep
+              ),
+            }));
+            throw error;
+          }
+          toast({
+            title: "Nouvelle Étape Ajoutée",
+            description: `L'étape "${trimmedStep}" a été ajoutée et sauvegardée.`,
+          });
+        } catch (error: any) {
+          console.error("Error saving new custom step:", error);
+          toast({
+            title: "Erreur de Sauvegarde",
+            description:
+              error.message ||
+              `Impossible de sauvegarder la nouvelle étape "${trimmedStep}". Veuillez réessayer.`,
+            variant: "destructive",
+          });
+        }
+      }
     } else if (
       availableProcessSteps.includes(trimmedStep) ||
       trimmedStep === FINAL_STEP
@@ -145,15 +221,18 @@ const ProductForm = ({ product, onSuccess, onCancel }: ProductFormProps) => {
     }
   };
 
-  const handleDeleteAvailableStep = (stepToDelete: string) => {
+  const handleDeleteAvailableStep = async (stepToDelete: string) => {
     if (AVAILABLE_PROCESS_STEPS_DEFAULT.includes(stepToDelete)) {
       toast({
         title: "Suppression Impossible",
-        description: `L'étape par défaut "${stepToDelete}" ne peut pas être supprimée.`,
+        description: `L'étape par défaut "${stepToDelete}" ne peut pas être supprimée de la liste globale.`,
         variant: "default",
       });
       return;
     }
+
+    const originalAvailableSteps = [...availableProcessSteps];
+    const originalFormDataProcessSteps = [...formData.process_steps];
 
     setAvailableProcessSteps((prev) =>
       prev.filter((step) => step !== stepToDelete)
@@ -164,10 +243,48 @@ const ProductForm = ({ product, onSuccess, onCancel }: ProductFormProps) => {
         (step) => step !== stepToDelete
       ),
     }));
-    toast({
-      title: "Étape Supprimée",
-      description: `L'étape "${stepToDelete}" a été retirée de la liste des étapes disponibles.`,
-    });
+
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from("process_step_options")
+          .delete()
+          .eq("name", stepToDelete);
+
+        if (error) {
+          setAvailableProcessSteps(originalAvailableSteps);
+          setFormData((prevData) => ({
+            ...prevData,
+            process_steps: originalFormDataProcessSteps,
+          }));
+          throw error;
+        }
+
+        toast({
+          title: "Étape Supprimée de la Liste Globale",
+          description: `L'étape "${stepToDelete}" a été retirée de la liste des étapes disponibles et de vos options sauvegardées.`,
+        });
+      } catch (error: any) {
+        console.error("Error deleting custom step from database:", error);
+        setAvailableProcessSteps(originalAvailableSteps);
+        setFormData((prevData) => ({
+          ...prevData,
+          process_steps: originalFormDataProcessSteps,
+        }));
+        toast({
+          title: "Erreur de Suppression Globale",
+          description:
+            error.message ||
+            `Impossible de supprimer l'étape "${stepToDelete}" de la liste globale. Elle a été rétablie localement.`,
+          variant: "destructive",
+        });
+      }
+    } else {
+      toast({
+        title: "Étape Supprimée (Localement)",
+        description: `L'étape "${stepToDelete}" a été retirée de la liste des étapes disponibles pour ce formulaire.`,
+      });
+    }
   };
 
   const handleRemoveStep = (index: number) => {
@@ -270,6 +387,15 @@ const ProductForm = ({ product, onSuccess, onCancel }: ProductFormProps) => {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoadingSteps || (isSupabaseLoading && !product)) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brandSecondary"></div>
+        <p className="ml-4 text-slate-500">Chargement des étapes...</p>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
