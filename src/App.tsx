@@ -157,6 +157,10 @@ function App() {
                             element={<ClientFormPage />}
                           />
                           <Route
+                            path="/clients/edit/:id"
+                            element={<ClientFormPage />}
+                          />
+                          <Route
                             path="/clients/:id"
                             element={<ClientDetail />}
                           />

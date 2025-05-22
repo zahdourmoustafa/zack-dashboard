@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -57,13 +57,27 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
     mode: "onSubmit", // Only validate on submit
   });
 
-  const onFormSubmit = async (data: ClientFormData) => {
-    // Don't proceed if form is already submitting
-    if (isSubmitting) return;
+  // Effect to reset form if client prop changes (for edit mode)
+  useEffect(() => {
+    if (client) {
+      form.reset({
+        full_name: client.full_name,
+        phone: client.phone,
+        email: client.email || "",
+      });
+    } else {
+      form.reset({
+        full_name: "",
+        phone: "",
+        email: "",
+      });
+    }
+  }, [client, form.reset]);
 
+  const onFormSubmit = async (data: ClientFormData) => {
+    if (isSubmitting) return;
     setIsSubmitting(true);
 
-    // Prepare base data for Supabase, ensuring email is always a string.
     const baseSubmissionData: {
       full_name: string;
       phone: string;
@@ -71,14 +85,13 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
     } = {
       full_name: data.full_name,
       phone: data.phone,
-      email: data.email || "", // Ensures email value is always a string (or empty string)
+      email: data.email || "",
     };
 
-    let createdClientId: string | undefined = undefined; // Declare createdClientId here
+    let createdClientId: string | undefined = undefined;
 
     try {
       if (client?.id) {
-        // Update existing client
         const updatePayload = {
           ...baseSubmissionData,
           updated_at: new Date().toISOString(),
@@ -90,7 +103,6 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
 
         if (error) throw error;
       } else {
-        // Add new client
         const insertPayload = {
           ...baseSubmissionData,
         };
@@ -101,10 +113,9 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
           .single();
 
         if (error) throw error;
-        createdClientId = newClient?.id; // Assign here, no new declaration
+        createdClientId = newClient?.id;
       }
 
-      // Show success toast only after successful database operation
       toast({
         title: client ? "Client mis à jour" : "Client ajouté",
         description: `${data.full_name} a été ${
@@ -112,9 +123,8 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
         } avec succès.`,
       });
 
-      // Clear form and call onSuccess only after successful operation
       form.reset();
-      onSuccess(client ? undefined : createdClientId);
+      onSuccess(createdClientId);
     } catch (error) {
       console.error("Error saving client:", error);
       toast({
