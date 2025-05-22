@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import ClientForm from "@/components/ClientForm";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -6,20 +6,21 @@ import { ArrowLeft } from "lucide-react";
 
 const ClientFormPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  const fromPath = location.state?.from || "/orders";
 
   const handleSuccess = (newClientId?: string) => {
     toast({
       title: "Client Ajouté",
       description: "Le nouveau client a été ajouté avec succès.",
     });
-    // Navigate back to the previous page, potentially with the new client's ID
-    // If newClientId is provided, it can be passed in state for the previous page to use
-    navigate(-1, { state: { newClientId } });
+    navigate(fromPath, { state: { newClientId }, replace: true });
   };
 
   const handleCancel = () => {
-    navigate(-1); // Go back to the previous page
+    navigate(fromPath, { replace: true });
   };
 
   return (
