@@ -272,10 +272,7 @@ const ProductForm = ({ product, onSuccess, onCancel }: ProductFormProps) => {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-6 overflow-y-auto max-h-[calc(100vh-10rem)] p-1"
-    >
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="name">Nom du Produit</Label>
         <Input

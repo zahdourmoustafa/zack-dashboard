@@ -178,7 +178,7 @@ const ProductsPage = () => {
           onClick={handleAddNewProduct}
           className="flex items-center gap-2 bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold"
         >
-          <Plus className="h-4 w-4" /> Nouveau Produit
+          <Plus className="h-4 w-4" /> new  Produit
         </Button>
       </div>
 
@@ -254,7 +254,7 @@ const ProductsPage = () => {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>
             <DialogTitle className="text-brandPrimary">
               {selectedProduct ? "Modifier le Produit" : "Ajouter un Produit"}
