@@ -272,7 +272,10 @@ const ProductForm = ({ product, onSuccess, onCancel }: ProductFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4"
+    >
       <div className="space-y-2">
         <Label htmlFor="name">Nom du Produit</Label>
         <Input
