@@ -623,7 +623,7 @@ const Dashboard = () => {
           {/* Commande Button */}
           <div
             className="flex-1 bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold px-4 py-2 rounded-lg shadow-sm flex items-center justify-center gap-2 cursor-pointer h-[50px] max-w-[180px] group"
-            onClick={() => navigate("/clients/new")}
+            onClick={handleCreateOrder}
           >
             <ClipboardPlus className="h-5 w-5" />
             <span className="text-sm">commande</span>

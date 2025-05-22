@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -39,11 +39,10 @@ interface ClientFormProps {
     phone: string;
     email: string;
   };
-  onSuccess: (newClientId?: string) => void;
-  onCancel?: () => void;
+  onSuccess: () => void;
 }
 
-const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
+const ClientForm = ({ client, onSuccess }: ClientFormProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -57,27 +56,13 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
     mode: "onSubmit", // Only validate on submit
   });
 
-  // Effect to reset form if client prop changes (for edit mode)
-  useEffect(() => {
-    if (client) {
-      form.reset({
-        full_name: client.full_name,
-        phone: client.phone,
-        email: client.email || "",
-      });
-    } else {
-      form.reset({
-        full_name: "",
-        phone: "",
-        email: "",
-      });
-    }
-  }, [client, form.reset]);
-
   const onFormSubmit = async (data: ClientFormData) => {
+    // Don't proceed if form is already submitting
     if (isSubmitting) return;
+
     setIsSubmitting(true);
 
+    // Prepare base data for Supabase, ensuring email is always a string.
     const baseSubmissionData: {
       full_name: string;
       phone: string;
@@ -85,13 +70,12 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
     } = {
       full_name: data.full_name,
       phone: data.phone,
-      email: data.email || "",
+      email: data.email || "", // Ensures email value is always a string (or empty string)
     };
-
-    let createdClientId: string | undefined = undefined;
 
     try {
       if (client?.id) {
+        // Update existing client
         const updatePayload = {
           ...baseSubmissionData,
           updated_at: new Date().toISOString(),
@@ -103,19 +87,16 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
 
         if (error) throw error;
       } else {
+        // Add new client
         const insertPayload = {
           ...baseSubmissionData,
         };
-        const { data: newClient, error } = await supabase
-          .from("clients")
-          .insert(insertPayload)
-          .select("id")
-          .single();
+        const { error } = await supabase.from("clients").insert(insertPayload);
 
         if (error) throw error;
-        createdClientId = newClient?.id;
       }
 
+      // Show success toast only after successful database operation
       toast({
         title: client ? "Client mis à jour" : "Client ajouté",
         description: `${data.full_name} a été ${
@@ -123,8 +104,9 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
         } avec succès.`,
       });
 
+      // Clear form and call onSuccess only after successful operation
       form.reset();
-      onSuccess(createdClientId);
+      onSuccess();
     } catch (error) {
       console.error("Error saving client:", error);
       toast({
@@ -190,19 +172,10 @@ const ClientForm = ({ client, onSuccess, onCancel }: ClientFormProps) => {
           )}
         />
 
-        <div className="flex justify-end pt-4 gap-2">
-          {onCancel && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              disabled={isSubmitting}
-            >
-              Annuler
-            </Button>
-          )}
+        <div className="flex justify-end pt-4">
           <Button
-            type="submit"
+            type="button"
+            onClick={() => form.handleSubmit(onFormSubmit)()}
             disabled={isSubmitting || form.formState.isSubmitting}
             className="bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold"
           >

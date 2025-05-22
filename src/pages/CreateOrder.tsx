@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, PlusCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,13 @@ import {
 } from "@/components/ui/popover";
 
 import ClientForm from "@/components/ClientForm";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   OrderItem as DataOrderItem,
@@ -57,8 +64,8 @@ const CreateOrder = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { id: orderIdFromParams } = useParams<{ id: string }>();
-  const location = useLocation();
   const isEditMode = Boolean(orderIdFromParams);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [orderDate, setOrderDate] = useState<Date | undefined>(new Date());
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [orderNotes, setOrderNotes] = useState<string>("");
@@ -77,32 +84,16 @@ const CreateOrder = () => {
   const [pageTitle, setPageTitle] = useState("Créer une Nouvelle Commande");
   const [submitButtonText, setSubmitButtonText] = useState("Créer la Commande");
 
-  const fetchClients = async (newlyAddedClientId?: string) => {
-    try {
-      const { data: clientsData, error: clientsError } = await supabase
-        .from("clients")
-        .select("*");
-      if (clientsError) throw clientsError;
-      setClients(clientsData || []);
-      if (newlyAddedClientId) {
-        setSelectedClientId(newlyAddedClientId);
-      }
-    } catch (error) {
-      console.error("Error fetching clients:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger la liste des clients.",
-        variant: "destructive",
-      });
-    }
-  };
-
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
 
       try {
-        await fetchClients();
+        const { data: clientsData, error: clientsError } = await supabase
+          .from("clients")
+          .select("*");
+        if (clientsError) throw clientsError;
+        setClients(clientsData || []);
 
         const { data: productsData, error: productsError } = await supabase
           .from("products")
@@ -183,15 +174,8 @@ const CreateOrder = () => {
         setIsLoading(false);
       }
     };
-
-    if (location.state?.newClientId) {
-      const newClientId = location.state.newClientId as string;
-      fetchClients(newClientId);
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-
     fetchData();
-  }, [toast, navigate, orderIdFromParams, isEditMode, location.state]);
+  }, [toast, navigate, orderIdFromParams, isEditMode]);
 
   const handleClientSelectChange = (value: string) => {
     setSelectedClientId(value);
@@ -231,6 +215,28 @@ const CreateOrder = () => {
     (newItems[index] as any)[field] =
       field === "quantity" ? Math.max(1, Number(value)) : value;
     setOrderItems(newItems);
+  };
+
+  const handleClientAdded = async () => {
+    setIsDialogOpen(false);
+    const { data, error } = await supabase
+      .from("clients")
+      .select<"*", Client>("*");
+    if (error) {
+      console.error("Error fetching clients:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de rafraîchir la liste des clients.",
+        variant: "destructive",
+      });
+    } else {
+      setClients(data || []);
+    }
+    toast({
+      title: "Client ajouté",
+      description:
+        "Le nouveau client a été ajouté avec succès. Veuillez le sélectionner dans la liste.",
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -438,17 +444,19 @@ const CreateOrder = () => {
                   <Label htmlFor="client_id" className="text-slate-700">
                     Client
                   </Label>
-                  <Button
-                    type="button"
-                    className="flex items-center gap-1 bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold text-xs px-2 py-1 h-auto"
-                    onClick={() =>
-                      navigate("/clients/new", {
-                        state: { from: location.pathname },
-                      })
-                    }
-                  >
-                    <PlusCircle size={14} className="mr-1" /> Nouveau Client
-                  </Button>
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="flex items-center gap-1 bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold text-xs px-2 py-1 h-auto">
+                        <PlusCircle size={14} className="mr-1" /> Nouveau Client
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Ajouter un Nouveau Client</DialogTitle>
+                      </DialogHeader>
+                      <ClientForm onSuccess={handleClientAdded} />
+                    </DialogContent>
+                  </Dialog>
                 </div>
                 <Select
                   onValueChange={handleClientSelectChange}

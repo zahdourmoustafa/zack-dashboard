@@ -14,7 +14,6 @@ import ClientsPage from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import ProductsPage from "./pages/Products";
 import ProductFormPage from "./pages/ProductFormPage";
-import ClientFormPage from "./pages/ClientFormPage";
 import CreateOrder from "./pages/CreateOrder";
 import OrderDetail from "./pages/OrderDetail";
 import OrdersPage from "./pages/OrdersPage";
@@ -152,14 +151,6 @@ function App() {
                         <Routes>
                           <Route path="/" element={<Dashboard />} />
                           <Route path="/clients" element={<ClientsPage />} />
-                          <Route
-                            path="/clients/new"
-                            element={<ClientFormPage />}
-                          />
-                          <Route
-                            path="/clients/edit/:id"
-                            element={<ClientFormPage />}
-                          />
                           <Route
                             path="/clients/:id"
                             element={<ClientDetail />}

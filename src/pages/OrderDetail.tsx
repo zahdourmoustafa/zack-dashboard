@@ -660,7 +660,7 @@ const OrderDetail = () => {
                 className="p-3 sm:p-4 border rounded-md bg-slate-50/50"
               >
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-2 gap-1 sm:gap-0">
-                  <h4 className="font-semibold text-base sm:text-md break-words">
+                  <h4 className="font-semibold text-base sm:text-md">
                     {item.product?.name || "Produit non spécifié"}
                   </h4>
                   <Badge
@@ -694,7 +694,7 @@ const OrderDetail = () => {
                   item.product.process_steps.length > 0 && (
                     <div className="mt-3 mb-3">
                       <h5 className="text-sm font-medium mb-2">Progression:</h5>
-                      <div className="flex flex-wrap items-center gap-2 pb-1">
+                      <div className="flex items-center space-x-2 overflow-x-auto pb-2">
                         {item.product.process_steps.map((step, stepIndex) => {
                           let stepState: "completed" | "active" | "pending" =
                             "pending";
