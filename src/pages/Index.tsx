@@ -29,9 +29,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// Import ProductForm
-import ProductForm from "@/components/ProductForm";
-
 // Type definitions
 import { Client, Order, Product, OrderItem } from "@/lib/mock-data";
 
@@ -45,8 +42,6 @@ const Dashboard = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
-  const [isProductFormOpen, setIsProductFormOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const [statusCounts, setStatusCounts] = useState({
     all: 0,
@@ -236,20 +231,6 @@ const Dashboard = () => {
 
   const handleCreateOrder = () => {
     navigate("/orders/create");
-  };
-
-  const handleCreateProduct = () => {
-    setSelectedProduct(null); // Ensure form is for a new product
-    setIsProductFormOpen(true);
-  };
-
-  const handleProductFormSuccess = () => {
-    setIsProductFormOpen(false);
-    setSelectedProduct(null); // Clear selected product after success
-    // Optionally, refresh products list if displayed on dashboard, though not strictly needed for just opening the form
-    // For now, just show a success toast, ProductForm itself handles the actual data submission toast.
-    // toast({ title: "Succès", description: "Opération produit réussie." });
-    // ProductForm will show its own more specific toast.
   };
 
   const handleTogglePriority = async (
@@ -651,7 +632,7 @@ const Dashboard = () => {
           {/* Produit Button */}
           <div
             className="flex-1 bg-brandSecondary hover:bg-yellow-400 text-brandPrimary font-semibold px-4 py-2 rounded-lg shadow-sm flex items-center justify-center gap-2 cursor-pointer h-[50px] max-w-[180px] group"
-            onClick={handleCreateProduct}
+            onClick={() => navigate("/products/new")}
           >
             <PackagePlus className="h-5 w-5" />
             <span className="text-sm">produit</span>
@@ -805,22 +786,6 @@ const Dashboard = () => {
               {isLoading ? "Suppression..." : "Oui, supprimer"}
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add New Product Dialog */}
-      <Dialog open={isProductFormOpen} onOpenChange={setIsProductFormOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedProduct ? "Modifier le Produit" : "Ajouter un Produit"}
-            </DialogTitle>
-          </DialogHeader>
-          <ProductForm
-            product={selectedProduct}
-            onSuccess={handleProductFormSuccess}
-            onCancel={() => setIsProductFormOpen(false)}
-          />
         </DialogContent>
       </Dialog>
     </div>
