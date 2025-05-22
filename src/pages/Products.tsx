@@ -254,7 +254,7 @@ const ProductsPage = () => {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white">
+        <DialogContent className="sm:max-w-2xl overflow-y-auto max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="text-brandPrimary">
               {selectedProduct ? "Modifier le Produit" : "Ajouter un Produit"}
