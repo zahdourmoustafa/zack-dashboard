@@ -508,9 +508,8 @@ const CreateOrder = () => {
                       placeholder="Rechercher un client..."
                       value={clientSearchTerm}
                       onChange={(e) => setClientSearchTerm(e.target.value)}
-                      onClick={(e) => e.stopPropagation()}
                       onKeyDown={(e) => e.stopPropagation()}
-                      onTouchStart={(e) => {
+                      onPointerDown={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
                       }}
@@ -610,9 +609,8 @@ const CreateOrder = () => {
                                   e.target.value
                                 )
                               }
-                              onClick={(e) => e.stopPropagation()}
                               onKeyDown={(e) => e.stopPropagation()}
-                              onTouchStart={(e) => {
+                              onPointerDown={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
                               }}
