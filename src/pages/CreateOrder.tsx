@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, PlusCircle, XCircle } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  PlusCircle,
+  XCircle,
+  Search,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -84,6 +89,7 @@ const CreateOrder = () => {
   const [pageTitle, setPageTitle] = useState("Créer une Nouvelle Commande");
   const [submitButtonText, setSubmitButtonText] = useState("Créer la Commande");
   const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -496,16 +502,32 @@ const CreateOrder = () => {
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Clients</SelectLabel>
+                      <div className="p-2">
+                        <Input
+                          type="search"
+                          placeholder="Rechercher un client..."
+                          value={clientSearchQuery}
+                          onChange={(e) => setClientSearchQuery(e.target.value)}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          className="w-full"
+                        />
+                      </div>
                       {clients.length === 0 ? (
                         <SelectItem value="no-clients" disabled>
                           Aucun client disponible
                         </SelectItem>
                       ) : (
-                        clients.map((client) => (
-                          <SelectItem key={client.id} value={client.id}>
-                            {client.full_name}
-                          </SelectItem>
-                        ))
+                        clients
+                          .filter((client) =>
+                            client.full_name
+                              .toLowerCase()
+                              .includes(clientSearchQuery.toLowerCase())
+                          )
+                          .map((client) => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.full_name}
+                            </SelectItem>
+                          ))
                       )}
                     </SelectGroup>
                   </SelectContent>
