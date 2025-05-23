@@ -510,7 +510,10 @@ const CreateOrder = () => {
                       onChange={(e) => setClientSearchTerm(e.target.value)}
                       onClick={(e) => e.stopPropagation()}
                       onKeyDown={(e) => e.stopPropagation()}
-                      onTouchStart={(e) => e.stopPropagation()}
+                      onTouchStart={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
                       className="mb-2 sticky top-0 z-10 bg-white"
                     />
                     <SelectGroup>
@@ -609,7 +612,10 @@ const CreateOrder = () => {
                               }
                               onClick={(e) => e.stopPropagation()}
                               onKeyDown={(e) => e.stopPropagation()}
-                              onTouchStart={(e) => e.stopPropagation()}
+                              onTouchStart={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                              }}
                               className="mb-2 sticky top-0 z-10 bg-white"
                             />
                             <SelectGroup>
