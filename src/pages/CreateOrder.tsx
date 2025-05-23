@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, PlusCircle, XCircle } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  PlusCircle,
+  XCircle,
+  Search,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -58,7 +63,6 @@ interface FormOrderItem {
   item_notes: string;
   temp_id?: string;
   id?: string;
-  productSearchTerm?: string;
 }
 
 const CreateOrder = () => {
@@ -76,7 +80,6 @@ const CreateOrder = () => {
       quantity: "1",
       item_notes: "",
       temp_id: Date.now().toString(),
-      productSearchTerm: "",
     },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,7 +88,8 @@ const CreateOrder = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [pageTitle, setPageTitle] = useState("Créer une Nouvelle Commande");
   const [submitButtonText, setSubmitButtonText] = useState("Créer la Commande");
-  const [clientSearchTerm, setClientSearchTerm] = useState("");
+  const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,10 +100,7 @@ const CreateOrder = () => {
           .from("clients")
           .select("*");
         if (clientsError) throw clientsError;
-        const sortedClients = (clientsData || []).sort((a, b) =>
-          a.full_name.localeCompare(b.full_name)
-        );
-        setClients(sortedClients);
+        setClients(clientsData || []);
 
         const { data: productsData, error: productsError } = await supabase
           .from("products")
@@ -109,6 +110,7 @@ const CreateOrder = () => {
           a.name.localeCompare(b.name)
         );
         setProducts(sortedProducts);
+        setFilteredProducts(sortedProducts);
 
         if (isEditMode && orderIdFromParams) {
           setPageTitle("Modifier la Commande");
@@ -153,7 +155,6 @@ const CreateOrder = () => {
                 ...item,
                 quantity: item.quantity || "1",
                 item_notes: item.item_notes || "",
-                productSearchTerm: item.product_name || "",
               })
             );
             setOrderItems(
@@ -165,7 +166,6 @@ const CreateOrder = () => {
                       quantity: "1",
                       item_notes: "",
                       temp_id: Date.now().toString(),
-                      productSearchTerm: "",
                     },
                   ]
             );
@@ -188,6 +188,18 @@ const CreateOrder = () => {
     fetchData();
   }, [toast, navigate, orderIdFromParams, isEditMode]);
 
+  useEffect(() => {
+    if (productSearchQuery === "") {
+      setFilteredProducts(products);
+    } else {
+      const lowercasedQuery = productSearchQuery.toLowerCase();
+      const filtered = products.filter((product) =>
+        product.name.toLowerCase().includes(lowercasedQuery)
+      );
+      setFilteredProducts(filtered);
+    }
+  }, [productSearchQuery, products]);
+
   const handleClientSelectChange = (value: string) => {
     setSelectedClientId(value);
   };
@@ -200,7 +212,6 @@ const CreateOrder = () => {
         quantity: "1",
         item_notes: "",
         temp_id: Date.now().toString(),
-        productSearchTerm: "",
       },
     ]);
   };
@@ -254,10 +265,7 @@ const CreateOrder = () => {
         variant: "destructive",
       });
     } else {
-      const sortedClients = (data || []).sort((a, b) =>
-        a.full_name.localeCompare(b.full_name)
-      );
-      setClients(sortedClients);
+      setClients(data || []);
     }
     toast({
       title: "Client ajouté",
@@ -435,10 +443,6 @@ const CreateOrder = () => {
     }
   };
 
-  const filteredClients = clients.filter((client) =>
-    client.full_name.toLowerCase().includes(clientSearchTerm.toLowerCase())
-  );
-
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-[60vh] bg-slate-50">
@@ -503,28 +507,14 @@ const CreateOrder = () => {
                     <SelectValue placeholder="Sélectionner un client" />
                   </SelectTrigger>
                   <SelectContent>
-                    <Input
-                      type="text"
-                      placeholder="Rechercher un client..."
-                      value={clientSearchTerm}
-                      onChange={(e) => setClientSearchTerm(e.target.value)}
-                      onKeyDown={(e) => e.stopPropagation()}
-                      onPointerDown={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                      }}
-                      className="mb-2 sticky top-0 z-10 bg-white"
-                    />
                     <SelectGroup>
                       <SelectLabel>Clients</SelectLabel>
-                      {filteredClients.length === 0 ? (
+                      {clients.length === 0 ? (
                         <SelectItem value="no-clients" disabled>
-                          {clients.length === 0
-                            ? "Aucun client disponible"
-                            : "Aucun client ne correspond à la recherche"}
+                          Aucun client disponible
                         </SelectItem>
                       ) : (
-                        filteredClients.map((client) => (
+                        clients.map((client) => (
                           <SelectItem key={client.id} value={client.id}>
                             {client.full_name}
                           </SelectItem>
@@ -595,58 +585,36 @@ const CreateOrder = () => {
                             id={`product_id_${index}`}
                             className="w-full border-gray-300 focus:border-brandPrimary focus:ring-brandPrimary bg-white"
                           >
-                            <SelectValue placeholder="Sélectionner un produit" />
+                            <SelectValue
+                              placeholder={
+                                item.product_id
+                                  ? "Modifier le produit"
+                                  : "Sélectionner un produit"
+                              }
+                            />
                           </SelectTrigger>
                           <SelectContent>
-                            <Input
-                              type="text"
-                              placeholder="Rechercher un produit..."
-                              value={item.productSearchTerm || ""}
-                              onChange={(e) =>
-                                handleOrderItemChange(
-                                  index,
-                                  "productSearchTerm",
-                                  e.target.value
-                                )
-                              }
-                              onKeyDown={(e) => e.stopPropagation()}
-                              onPointerDown={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                              }}
-                              className="mb-2 sticky top-0 z-10 bg-white"
-                            />
                             <SelectGroup>
                               <SelectLabel>Produits</SelectLabel>
-                              {products
-                                .filter((product) =>
-                                  product.name
-                                    .toLowerCase()
-                                    .includes(
-                                      (
-                                        item.productSearchTerm || ""
-                                      ).toLowerCase()
-                                    )
-                                )
-                                .map((product) => (
-                                  <SelectItem
-                                    key={product.id}
-                                    value={product.id}
-                                  >
-                                    {product.name}
-                                  </SelectItem>
-                                ))}
-                              {products.filter((product) =>
-                                product.name
-                                  .toLowerCase()
-                                  .includes(
-                                    (item.productSearchTerm || "").toLowerCase()
-                                  )
-                              ).length === 0 && (
-                                <SelectItem value="no-product" disabled>
-                                  Aucun produit ne correspond
+                              <div className="p-2">
+                                <div className="relative">
+                                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                                  <Input
+                                    type="search"
+                                    placeholder="Rechercher un produit..."
+                                    className="pl-8 w-full"
+                                    value={productSearchQuery}
+                                    onChange={(e) =>
+                                      setProductSearchQuery(e.target.value)
+                                    }
+                                  />
+                                </div>
+                              </div>
+                              {filteredProducts.map((product) => (
+                                <SelectItem key={product.id} value={product.id}>
+                                  {product.name}
                                 </SelectItem>
-                              )}
+                              ))}
                             </SelectGroup>
                           </SelectContent>
                         </Select>
