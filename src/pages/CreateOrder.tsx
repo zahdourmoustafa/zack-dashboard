@@ -1,12 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
-import {
-  Calendar as CalendarIcon,
-  PlusCircle,
-  XCircle,
-  Search,
-} from "lucide-react";
+import { Calendar as CalendarIcon, PlusCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -89,7 +84,6 @@ const CreateOrder = () => {
   const [pageTitle, setPageTitle] = useState("Créer une Nouvelle Commande");
   const [submitButtonText, setSubmitButtonText] = useState("Créer la Commande");
   const [productSearchQuery, setProductSearchQuery] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -110,7 +104,6 @@ const CreateOrder = () => {
           a.name.localeCompare(b.name)
         );
         setProducts(sortedProducts);
-        setFilteredProducts(sortedProducts);
 
         if (isEditMode && orderIdFromParams) {
           setPageTitle("Modifier la Commande");
@@ -188,18 +181,6 @@ const CreateOrder = () => {
     fetchData();
   }, [toast, navigate, orderIdFromParams, isEditMode]);
 
-  useEffect(() => {
-    if (productSearchQuery === "") {
-      setFilteredProducts(products);
-    } else {
-      const lowercasedQuery = productSearchQuery.toLowerCase();
-      const filtered = products.filter((product) =>
-        product.name.toLowerCase().includes(lowercasedQuery)
-      );
-      setFilteredProducts(filtered);
-    }
-  }, [productSearchQuery, products]);
-
   const handleClientSelectChange = (value: string) => {
     setSelectedClientId(value);
   };
@@ -272,6 +253,12 @@ const CreateOrder = () => {
       description:
         "Le nouveau client a été ajouté avec succès. Veuillez le sélectionner dans la liste.",
     });
+  };
+
+  const handleProductSelectChange = (index: number, value: string) => {
+    const newItems = [...orderItems];
+    newItems[index].product_id = value;
+    setOrderItems(newItems);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -576,7 +563,7 @@ const CreateOrder = () => {
                         </Label>
                         <Select
                           onValueChange={(value) =>
-                            handleOrderItemChange(index, "product_id", value)
+                            handleProductSelectChange(index, value)
                           }
                           value={item.product_id}
                           required
@@ -585,36 +572,36 @@ const CreateOrder = () => {
                             id={`product_id_${index}`}
                             className="w-full border-gray-300 focus:border-brandPrimary focus:ring-brandPrimary bg-white"
                           >
-                            <SelectValue
-                              placeholder={
-                                item.product_id
-                                  ? "Modifier le produit"
-                                  : "Sélectionner un produit"
-                              }
-                            />
+                            <SelectValue placeholder="Sélectionner un produit" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
                               <SelectLabel>Produits</SelectLabel>
                               <div className="p-2">
-                                <div className="relative">
-                                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                                  <Input
-                                    type="search"
-                                    placeholder="Rechercher un produit..."
-                                    className="pl-8 w-full"
-                                    value={productSearchQuery}
-                                    onChange={(e) =>
-                                      setProductSearchQuery(e.target.value)
-                                    }
-                                  />
-                                </div>
+                                <Input
+                                  type="search"
+                                  placeholder="Rechercher un produit..."
+                                  value={productSearchQuery}
+                                  onChange={(e) =>
+                                    setProductSearchQuery(e.target.value)
+                                  }
+                                  className="w-full"
+                                />
                               </div>
-                              {filteredProducts.map((product) => (
-                                <SelectItem key={product.id} value={product.id}>
-                                  {product.name}
-                                </SelectItem>
-                              ))}
+                              {products
+                                .filter((product) =>
+                                  product.name
+                                    .toLowerCase()
+                                    .includes(productSearchQuery.toLowerCase())
+                                )
+                                .map((product) => (
+                                  <SelectItem
+                                    key={product.id}
+                                    value={product.id.toString()}
+                                  >
+                                    {product.name}
+                                  </SelectItem>
+                                ))}
                             </SelectGroup>
                           </SelectContent>
                         </Select>
