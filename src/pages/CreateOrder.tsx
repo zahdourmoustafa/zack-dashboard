@@ -58,6 +58,7 @@ interface FormOrderItem {
   item_notes: string;
   temp_id?: string;
   id?: string;
+  productSearchTerm?: string;
 }
 
 const CreateOrder = () => {
@@ -75,6 +76,7 @@ const CreateOrder = () => {
       quantity: "1",
       item_notes: "",
       temp_id: Date.now().toString(),
+      productSearchTerm: "",
     },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,6 +85,7 @@ const CreateOrder = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [pageTitle, setPageTitle] = useState("Créer une Nouvelle Commande");
   const [submitButtonText, setSubmitButtonText] = useState("Créer la Commande");
+  const [clientSearchTerm, setClientSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -93,7 +96,10 @@ const CreateOrder = () => {
           .from("clients")
           .select("*");
         if (clientsError) throw clientsError;
-        setClients(clientsData || []);
+        const sortedClients = (clientsData || []).sort((a, b) =>
+          a.full_name.localeCompare(b.full_name)
+        );
+        setClients(sortedClients);
 
         const { data: productsData, error: productsError } = await supabase
           .from("products")
@@ -147,6 +153,7 @@ const CreateOrder = () => {
                 ...item,
                 quantity: item.quantity || "1",
                 item_notes: item.item_notes || "",
+                productSearchTerm: item.product_name || "",
               })
             );
             setOrderItems(
@@ -158,6 +165,7 @@ const CreateOrder = () => {
                       quantity: "1",
                       item_notes: "",
                       temp_id: Date.now().toString(),
+                      productSearchTerm: "",
                     },
                   ]
             );
@@ -192,6 +200,7 @@ const CreateOrder = () => {
         quantity: "1",
         item_notes: "",
         temp_id: Date.now().toString(),
+        productSearchTerm: "",
       },
     ]);
   };
@@ -245,7 +254,10 @@ const CreateOrder = () => {
         variant: "destructive",
       });
     } else {
-      setClients(data || []);
+      const sortedClients = (data || []).sort((a, b) =>
+        a.full_name.localeCompare(b.full_name)
+      );
+      setClients(sortedClients);
     }
     toast({
       title: "Client ajouté",
@@ -423,6 +435,10 @@ const CreateOrder = () => {
     }
   };
 
+  const filteredClients = clients.filter((client) =>
+    client.full_name.toLowerCase().includes(clientSearchTerm.toLowerCase())
+  );
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-[60vh] bg-slate-50">
@@ -487,14 +503,25 @@ const CreateOrder = () => {
                     <SelectValue placeholder="Sélectionner un client" />
                   </SelectTrigger>
                   <SelectContent>
+                    <Input
+                      type="text"
+                      placeholder="Rechercher un client..."
+                      value={clientSearchTerm}
+                      onChange={(e) => setClientSearchTerm(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      className="mb-2 sticky top-0 z-10 bg-white"
+                    />
                     <SelectGroup>
                       <SelectLabel>Clients</SelectLabel>
-                      {clients.length === 0 ? (
+                      {filteredClients.length === 0 ? (
                         <SelectItem value="no-clients" disabled>
-                          Aucun client disponible
+                          {clients.length === 0
+                            ? "Aucun client disponible"
+                            : "Aucun client ne correspond à la recherche"}
                         </SelectItem>
                       ) : (
-                        clients.map((client) => (
+                        filteredClients.map((client) => (
                           <SelectItem key={client.id} value={client.id}>
                             {client.full_name}
                           </SelectItem>
@@ -568,13 +595,52 @@ const CreateOrder = () => {
                             <SelectValue placeholder="Sélectionner un produit" />
                           </SelectTrigger>
                           <SelectContent>
+                            <Input
+                              type="text"
+                              placeholder="Rechercher un produit..."
+                              value={item.productSearchTerm || ""}
+                              onChange={(e) =>
+                                handleOrderItemChange(
+                                  index,
+                                  "productSearchTerm",
+                                  e.target.value
+                                )
+                              }
+                              onClick={(e) => e.stopPropagation()}
+                              onKeyDown={(e) => e.stopPropagation()}
+                              className="mb-2 sticky top-0 z-10 bg-white"
+                            />
                             <SelectGroup>
                               <SelectLabel>Produits</SelectLabel>
-                              {products.map((product) => (
-                                <SelectItem key={product.id} value={product.id}>
-                                  {product.name}
+                              {products
+                                .filter((product) =>
+                                  product.name
+                                    .toLowerCase()
+                                    .includes(
+                                      (
+                                        item.productSearchTerm || ""
+                                      ).toLowerCase()
+                                    )
+                                )
+                                .map((product) => (
+                                  <SelectItem
+                                    key={product.id}
+                                    value={product.id}
+                                  >
+                                    {product.name}
+                                  </SelectItem>
+                                ))}
+                              {products.filter((product) =>
+                                product.name
+                                  .toLowerCase()
+                                  .includes(
+                                    (item.productSearchTerm || "").toLowerCase()
+                                  )
+                              ).length === 0 && (
+                                <SelectItem value="no-product" disabled>
+                                  Aucun produit ne correspond
                                 </SelectItem>
-                              ))}
+                              )}
                             </SelectGroup>
                           </SelectContent>
                         </Select>
