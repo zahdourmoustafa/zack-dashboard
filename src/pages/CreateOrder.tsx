@@ -585,6 +585,7 @@ const CreateOrder = () => {
                                   onChange={(e) =>
                                     setProductSearchQuery(e.target.value)
                                   }
+                                  onMouseDown={(e) => e.stopPropagation()}
                                   className="w-full"
                                 />
                               </div>
