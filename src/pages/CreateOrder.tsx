@@ -100,7 +100,10 @@ const CreateOrder = () => {
           .from("clients")
           .select("*");
         if (clientsError) throw clientsError;
-        setClients(clientsData || []);
+        const sortedClients = (clientsData || []).sort((a, b) =>
+          a.full_name.localeCompare(b.full_name)
+        );
+        setClients(sortedClients);
 
         const { data: productsData, error: productsError } = await supabase
           .from("products")
