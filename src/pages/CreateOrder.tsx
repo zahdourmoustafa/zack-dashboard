@@ -74,6 +74,7 @@ const CreateOrder = () => {
   const [orderDate, setOrderDate] = useState<Date | undefined>(new Date());
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [orderNotes, setOrderNotes] = useState<string>("");
+  const [orderSource, setOrderSource] = useState<string>("");
   const [orderItems, setOrderItems] = useState<FormOrderItem[]>([
     {
       product_id: "",
@@ -152,6 +153,7 @@ const CreateOrder = () => {
                 : new Date()
             );
             setOrderNotes(existingOrderData.notes || "");
+            setOrderSource(existingOrderData.order_source || "");
             const fetchedOrderItems = (existingOrderData.order_items || []).map(
               (item: any) => ({
                 ...item,
@@ -281,12 +283,13 @@ const CreateOrder = () => {
           parseInt(item.quantity, 10) < 1 ||
           isNaN(parseInt(item.quantity, 10))
       ) ||
-      !orderDate
+      !orderDate ||
+      !orderSource
     ) {
       toast({
         title: "Erreur de validation",
         description:
-          "Veuillez sélectionner un client, une date, et vous assurer que chaque produit a une quantité valide.",
+          "Veuillez sélectionner un client, une date, une source de commande, et vous assurer que chaque produit a une quantité valide.",
         variant: "destructive",
       });
       return;
@@ -314,6 +317,7 @@ const CreateOrder = () => {
       order_date: orderDate.toISOString(),
       notes: orderNotes,
       user_id: userId,
+      order_source: orderSource,
     };
 
     try {
@@ -567,6 +571,36 @@ const CreateOrder = () => {
                     />
                   </PopoverContent>
                 </Popover>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="order_source" className="text-slate-700">
+                  Source de la Commande
+                </Label>
+                <Select
+                  onValueChange={setOrderSource}
+                  value={orderSource}
+                  required
+                >
+                  <SelectTrigger
+                    id="order_source"
+                    className="border-gray-300 focus:border-brandPrimary focus:ring-brandPrimary"
+                  >
+                    <SelectValue placeholder="Sélectionner une source" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Sources</SelectLabel>
+                      <SelectItem value="bureau">Bureau</SelectItem>
+                      <SelectItem value="whatsapp">Whatsapp</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="messagerie_page">
+                        Messagerie de la page
+                      </SelectItem>
+                      <SelectItem value="telephone">Téléphone</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-4">

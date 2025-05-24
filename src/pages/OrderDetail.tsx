@@ -95,6 +95,7 @@ const OrderDetail = () => {
             updated_at,
             current_step_index,
             client_id,
+            order_source,
             clients ( id, full_name, email, phone ),
             order_items (
               id,
@@ -973,6 +974,26 @@ const OrderDetail = () => {
             </Card>
           </div>
         )}
+
+        {/* START - Order Source Card */}
+        {order.order_source && (
+          <div className="md:col-span-3">
+            <Card className="shadow-lg mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center text-brandPrimary">
+                  <ListOrderedIcon className="mr-2 h-5 w-5 text-brandSecondary" />{" "}
+                  Source de la Commande
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-lg font-bold text-slate-700 capitalize">
+                  {order.order_source.replace(/_/g, " ")}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        {/* END - Order Source Card */}
 
         {/* Product Details and Notes - Takes up 2 columns */}
         <div className="md:col-span-2 space-y-6">
