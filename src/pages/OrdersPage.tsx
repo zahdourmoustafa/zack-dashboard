@@ -83,11 +83,13 @@ const OrdersPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [allProcessSteps, setAllProcessSteps] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // State for new filters
   const [productFilter, setProductFilter] = useState("");
   const [clientFilter, setClientFilter] = useState("");
+  const [processStepFilter, setProcessStepFilter] = useState("");
   const [minQuantityFilter, setMinQuantityFilter] = useState("");
   const [maxQuantityFilter, setMaxQuantityFilter] = useState("");
   const [startDateFilter, setStartDateFilter] = useState<Date | undefined>(
@@ -116,8 +118,52 @@ const OrdersPage = () => {
     return ["Tous les clients", ...Array.from(names)];
   }, [orderItems]);
 
+  // Use all process steps from the system
+  const uniqueProcessSteps = React.useMemo(() => {
+    return ["Toutes les étapes", ...allProcessSteps.sort()];
+  }, [allProcessSteps]);
+
+  // Fetch all available process steps from products
+  const fetchAllProcessSteps = async () => {
+    try {
+      // Fetch all products to get their process steps
+      const { data: productsData, error: productsError } = await supabase
+        .from("products")
+        .select("process_steps");
+
+      if (productsError) throw productsError;
+
+      // Combine all process steps
+      const stepsSet = new Set<string>();
+
+      // Add default steps (in case they're not in any product)
+      const defaultSteps = ["Conception", "Impression", "Plastification", "Pelliculage", "Découpe", "Emballage"];
+      defaultSteps.forEach(step => stepsSet.add(step));
+
+      // Add steps from products
+      if (productsData) {
+        productsData.forEach((product: any) => {
+          if (product.process_steps) {
+            product.process_steps.forEach((step: string) => {
+              stepsSet.add(step);
+            });
+          }
+        });
+      }
+
+      // Custom steps are included in product process_steps, so no need for separate table
+
+      setAllProcessSteps(Array.from(stepsSet));
+    } catch (error) {
+      console.error("Error fetching process steps:", error);
+      // Fallback to default steps if fetch fails
+      setAllProcessSteps(["Conception", "Impression", "Plastification", "Pelliculage", "Découpe", "Emballage"]);
+    }
+  };
+
   useEffect(() => {
     fetchOrderItems();
+    fetchAllProcessSteps();
   }, [navigate, toast]);
 
   const processedOrderItems = React.useMemo(() => {
@@ -141,6 +187,21 @@ const OrdersPage = () => {
       itemsToFilter = itemsToFilter.filter(
         (item) => item.clientName === clientFilter
       );
+    }
+
+    // Add process step filtering - filter by CURRENT step only
+    if (processStepFilter && processStepFilter !== "Toutes les étapes") {
+      itemsToFilter = itemsToFilter.filter((item) => {
+        if (!item.product?.process_steps || item.product.process_steps.length === 0) {
+          return false;
+        }
+        
+        // Get the current step based on current_step_index
+        const currentStepIndex = item.current_step_index ?? 0;
+        const currentStep = item.product.process_steps[currentStepIndex];
+        
+        return currentStep === processStepFilter;
+      });
     }
 
     if (minQuantityFilter) {
@@ -209,6 +270,7 @@ const OrdersPage = () => {
     processedOrderItems,
     productFilter,
     clientFilter,
+    processStepFilter,
     minQuantityFilter,
     maxQuantityFilter,
     startDateFilter,
@@ -437,6 +499,7 @@ const OrdersPage = () => {
             </SelectContent>
           </Select>
         </div>
+
         <div>
           <Label htmlFor="clientFilter" className="text-sm font-medium">
             Client
@@ -459,6 +522,30 @@ const OrdersPage = () => {
             </SelectContent>
           </Select>
         </div>
+
+        <div>
+          <Label htmlFor="processStepFilter" className="text-sm font-medium">
+            Étapes du Processus
+          </Label>
+          <Select
+            value={processStepFilter}
+            onValueChange={(value) =>
+              setProcessStepFilter(value === "Toutes les étapes" ? "" : value)
+            }
+          >
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="Toutes les étapes" />
+            </SelectTrigger>
+            <SelectContent>
+              {uniqueProcessSteps.map((step) => (
+                <SelectItem key={step} value={step}>
+                  {step}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="grid grid-cols-2 gap-2">
           <div>
             <Label htmlFor="minQuantityFilter" className="text-sm font-medium">
@@ -487,6 +574,7 @@ const OrdersPage = () => {
             />
           </div>
         </div>
+
         <div>
           <Label htmlFor="startDateFilter" className="text-sm font-medium">
             Date de début
